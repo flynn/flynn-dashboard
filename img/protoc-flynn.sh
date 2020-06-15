@@ -2,7 +2,7 @@
 
 set -e
 
-ref="755c95684ffe290c64b8be114c2963aa2850b531"
+ref="5239bdd5f33754683abf5680db6d067de0240984"
 
 # download flynn controller api protobuf file
 mkdir -p /flynn-controller-api/generated
