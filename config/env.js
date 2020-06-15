@@ -81,11 +81,10 @@ function getClientEnvironment(publicUrl) {
 	// Stringify all values so we can feed into Webpack DefinePlugin and use
 	// `window.DashboardConfig` in production build (the server handles
 	// interpolating variables in HTML served).
-	const isProduction = nodeEnv === 'production';
 	const stringified = {
 		'process.env': Object.keys(raw).reduce((env, key) => {
 			const jsonValue = JSON.stringify(raw[key]);
-			env[key] = isProduction && key !== 'NODE_ENV' ? `window.DashboardConfig.${key} || ${jsonValue}` : jsonValue;
+			env[key] = jsonValue;
 			return env;
 		}, {})
 	};

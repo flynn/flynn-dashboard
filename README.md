@@ -1,6 +1,12 @@
 flynn dashboard
 ===============
 
+## Building
+
+```
+$ docker build . --build-arg CONTROLLER_HOST="" --build-arg OAUTH_ISSUER="" --build-arg OAUTH_CLIENT_ID=""
+```
+
 ## Development
 
 ### Generate protobuf files

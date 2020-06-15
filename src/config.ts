@@ -6,8 +6,6 @@ export interface PublicConfig {
 	CONTROLLER_HOST: string;
 	OAUTH_ISSUER: string;
 	OAUTH_CLIENT_ID: string;
-	PUBLIC_URL: string;
-	WORKER_URL: string;
 }
 
 export interface PrivateConfig {
@@ -37,9 +35,6 @@ const config: Config = {
 
 	OAUTH_ISSUER: process.env.OAUTH_ISSUER || '',
 	OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID || '',
-
-	PUBLIC_URL: process.env.PUBLIC_URL || '',
-	WORKER_URL: process.env.WORKER_URL || '',
 
 	AUTH_TOKEN: null,
 
