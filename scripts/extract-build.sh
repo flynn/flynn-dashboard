@@ -3,4 +3,5 @@
 set -e
 
 cid=$(docker create flynn:dashboard)
-docker cp "$cid:/flynn-controller-api/generated" ./src/
+rm -rf ./build
+docker cp "$cid:/app/build" ./build
