@@ -1,5 +1,8 @@
 build:
-	yarn && yarn build
+	docker build --tag "flynn:dashboard" .
+
+generate: build
+	./scripts/extract-generated.sh
 
 clean:
 	rm -rf build
@@ -7,4 +10,4 @@ clean:
 test:
 	yarn test
 
-.PHONY: build clean test
+.PHONY: build generate clean test

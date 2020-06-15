@@ -13,7 +13,12 @@ COPY ./img /img
 RUN sh /img/protoc-base.sh
 RUN sh /img/protoc-flynn.sh
 RUN sh /img/yarn.sh
+
 COPY . /app
-RUN cp /flynn-controller-api/generated/* /app/src/generated/
+
+WORKDIR /flynn-controller-api/generated
+RUN tar -czvf /generated.tar.gz ./*
+RUN cp ./* /app/src/generated/
+
 WORKDIR /app
-RUN make
+RUN yarn && yarn build
