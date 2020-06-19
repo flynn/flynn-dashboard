@@ -31,6 +31,12 @@ export interface OAuthToken {
 	issued_time: number;
 }
 
+export interface OAuthAudience {
+	name: string;
+	url: string;
+	type: string;
+}
+
 export interface ErrorWithID extends Error {
 	id: string;
 }
@@ -44,6 +50,8 @@ export enum MessageType {
 	AUTH_REQUEST = 'AUTH_REQUEST',
 	AUTH_CALLBACK = 'AUTH_CALLBACK',
 	AUTH_TOKEN = 'AUTH_TOKEN',
+	AUTH_AUDIENCES = 'AUTH_AUDIENCES',
+	PICK_AUTH_AUDIENCE = 'PICK_AUTH_AUDIENCE',
 	AUTH_ERROR = 'AUTH_ERROR',
 	ERROR = 'ERROR',
 	CLEAR_ERROR = 'CLEAR_ERROR'
@@ -70,6 +78,7 @@ export interface PongMessage {
 
 export interface RetryAuthMessage {
 	type: MessageType.RETRY_AUTH;
+	audience?: string;
 }
 
 export interface AuthRequestMessage {
@@ -84,7 +93,18 @@ export interface AuthCallbackMessage {
 
 export interface AuthTokenMessage {
 	type: MessageType.AUTH_TOKEN;
+	audience: string;
 	payload: OAuthToken;
+}
+
+export interface AuthAudiencesMessage {
+	type: MessageType.AUTH_AUDIENCES;
+	payload: OAuthAudience[];
+}
+
+export interface PickAudienceMessage {
+	type: MessageType.PICK_AUTH_AUDIENCE;
+	payload: string;
 }
 
 export interface AuthErrorMessage {
@@ -112,6 +132,8 @@ export type Message =
 	| AuthRequestMessage
 	| AuthCallbackMessage
 	| AuthTokenMessage
+	| AuthAudiencesMessage
+	| PickAudienceMessage
 	| AuthErrorMessage
 	| ErrorMessage
 	| ClearErrorMessage;

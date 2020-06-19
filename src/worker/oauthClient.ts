@@ -54,18 +54,18 @@ function dbClearAuth(): Promise<any> {
 	);
 }
 
-export async function initClient(clientID: string) {
-	const token = await getToken();
+export async function initClient(clientID: string, audience: string | null) {
+	const token = audience ? await getToken(audience) : null;
 	if (token && isTokenValid(token)) {
 		debug('[initClient]: using existing valid token', token);
 		// setToken will handle setting up the refresh cycle
-		await setToken(token);
+		await setToken(audience, token);
 		return;
-	} else if (canRefreshToken(token)) {
+	} else if (audience && canRefreshToken(token)) {
 		debug('[initClient]: attempting to refresh existing token', token);
 
 		try {
-			await doTokenRefresh((token as types.OAuthToken).refresh_token);
+			await doTokenRefresh(audience, (token as types.OAuthToken).refresh_token);
 		} catch (error) {
 			await handleError(types.MessageType.AUTH_ERROR, error);
 		}
@@ -95,12 +95,13 @@ export async function initClient(clientID: string) {
 	}
 }
 
-export async function sendToken(clientID: string) {
-	const token = await getToken();
+export async function sendToken(clientID: string, audience: string) {
+	const token = await getToken(audience);
 	if (isTokenValid(token)) {
 		debug('sending token to', clientID);
 		await postMessage(clientID, {
 			type: types.MessageType.AUTH_TOKEN,
+			audience,
 			payload: token as types.OAuthToken
 		});
 	}
@@ -177,18 +178,21 @@ function calcDelay(min: number, max: number, val: number): number {
 	return Math.max(val - max, min);
 }
 
-async function setToken(token: types.OAuthToken) {
-	debug('[setToken]', token);
+async function setToken(audience: string | null, token: types.OAuthToken) {
+	debug('[setToken]', audience, token);
 
-	clearTimeout(refreshTokenTimeout);
+	if (audience) {
+		clearTimeout(refreshTokenTimeout);
 
-	await postMessageAll({
-		type: types.MessageType.AUTH_TOKEN,
-		payload: token
-	});
+		await postMessageAll({
+			type: types.MessageType.AUTH_TOKEN,
+			audience,
+			payload: token
+		});
+	}
 	await dbSet(DBKeys.TOKEN, token);
 
-	if (canRefreshToken(token)) {
+	if (audience && canRefreshToken(token)) {
 		const delta = Date.now() - token.issued_time;
 		const expiresInMs = token.expires_in * 1000 - delta;
 		const minRefreshDelayMs = 5000;
@@ -198,7 +202,7 @@ async function setToken(token: types.OAuthToken) {
 		debug(`[setToken]: token will refresh in ${refreshDelayMs}ms and expires in ${expiresInMs}`);
 		refreshTokenTimeout = setTimeout(async () => {
 			try {
-				await doTokenRefresh(token.refresh_token);
+				await doTokenRefresh(audience, token.refresh_token);
 			} catch (error) {
 				await handleError(types.MessageType.AUTH_ERROR, error);
 				await dbClearAuth();
@@ -207,7 +211,7 @@ async function setToken(token: types.OAuthToken) {
 	}
 }
 
-async function getToken(): Promise<types.OAuthToken | null> {
+async function getToken(audience: string): Promise<types.OAuthToken | null> {
 	try {
 		const token = (await dbGet(DBKeys.TOKEN)) || null;
 		return token as types.OAuthToken | null;
@@ -223,6 +227,7 @@ interface ServerMetadata {
 	token_endpoint_auth_methods_supported: string;
 	token_endpoint_auth_signing_alg_values_supported: string;
 	userinfo_endpoint: string;
+	audiences_endpoint: string;
 }
 
 function codePointCompare(a: string, b: string): boolean {
@@ -341,16 +346,10 @@ async function doTokenExchange(params: types.OAuthCallbackResponse) {
 
 	const cachedValues = ((await dbGet(DBKeys.AUTHORIZATION_CACHE)) as types.OAuthCachedValues) || null;
 	if (!cachedValues) {
-		if (abortSignal && abortSignal.aborted) {
-			debug('[doTokenExchange] signal aborted');
-		}
 		throw new Error('doTokenExchange: Error: corrupt data');
 	}
 
 	if (!(await codePointCompare(params.state || '', cachedValues.state))) {
-		if (abortSignal && abortSignal.aborted) {
-			debug('[doTokenExchange] signal aborted');
-		}
 		throw new Error(`Error verifying state param`);
 	}
 
@@ -384,7 +383,6 @@ async function doTokenExchange(params: types.OAuthCallbackResponse) {
 	// body.set('code_verifier', 'foo');
 	body.set('redirect_uri', cachedValues.redirectURI);
 	body.set('client_id', config.OAUTH_CLIENT_ID);
-	body.set('audience', config.CONTROLLER_HOST);
 	const res = await retryFetch(meta.token_endpoint, {
 		method: 'POST',
 		headers: {
@@ -399,13 +397,33 @@ async function doTokenExchange(params: types.OAuthCallbackResponse) {
 	}
 	if (!token.error) {
 		token.issued_time = Date.now();
-		await setToken(token as types.OAuthToken);
+		await setToken(null, token as types.OAuthToken);
+		await fetchAudiences(token.refresh_token, abortSignal);
 	} else {
 		throw buildError(token as TokenError, 'Error getting auth token');
 	}
 }
 
-async function doTokenRefresh(refreshToken: string) {
+async function fetchAudiences(refreshToken: string, abortSignal: AbortSignal | undefined) {
+	const meta = await getServerMeta();
+	const res = await fetch(meta.audiences_endpoint, {
+		method: 'GET',
+		headers: {
+			Authorization: `RefreshToken ${refreshToken}`
+		},
+		signal: abortSignal
+	});
+	const audiences = await res.json();
+
+	console.log('AUDIENCES', audiences);
+
+	postMessageAll({
+		type: types.MessageType.AUTH_AUDIENCES,
+		payload: audiences
+	});
+}
+
+async function doTokenRefresh(audience: string, refreshToken: string) {
 	debug('[doTokenRefresh]', refreshToken);
 
 	const config = await getConfig();
@@ -414,7 +432,7 @@ async function doTokenRefresh(refreshToken: string) {
 	body.set('grant_type', 'refresh_token');
 	body.set('refresh_token', refreshToken);
 	body.set('client_id', config.OAUTH_CLIENT_ID);
-	body.set('audience', config.CONTROLLER_HOST);
+	body.set('audience', audience);
 	const res = await retryFetch(meta.token_endpoint, {
 		method: 'POST',
 		headers: {
@@ -424,11 +442,11 @@ async function doTokenRefresh(refreshToken: string) {
 	});
 	const token = await res.json();
 	if (!token.error) {
-		debug('[doTokenRefresh] success', token);
+		debug('[doTokenRefresh] success', audience, token);
 		token.issued_time = Date.now();
-		await setToken(token as types.OAuthToken);
+		await setToken(audience, token as types.OAuthToken);
 	} else {
-		debug('[doTokenRefresh] error', token);
-		throw buildError(token, 'Error refreshing auth token');
+		debug('[doTokenRefresh] error', audience, token);
+		throw buildError(token, `Error refreshing auth token for audience (${audience})`);
 	}
 }
