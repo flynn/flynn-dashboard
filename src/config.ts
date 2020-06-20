@@ -9,12 +9,10 @@ export interface PublicConfig {
 
 export interface PrivateConfig {
 	AUTH_AUDIENCES: types.OAuthAudience[];
-	CONTROLLER_AUTH_KEY: string | null;
 }
 
 export interface Config extends PublicConfig, PrivateConfig {
 	AUTH_TOKEN: types.OAuthToken | null;
-	unsetPrivateConfig: () => void;
 	setAuth: (token: types.OAuthToken | null) => void;
 	authCallback: typeof authEmitter.addListener;
 	isAuthenticated: () => boolean;
@@ -39,7 +37,6 @@ const authAudienceHashMap = new Map<string, string>();
 
 const config: Config = {
 	AUTH_AUDIENCES: authAudiencesStore.get() || [],
-	CONTROLLER_AUTH_KEY: null,
 
 	OAUTH_ISSUER: process.env.OAUTH_ISSUER || '',
 	OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID || '',
@@ -69,10 +66,6 @@ const config: Config = {
 	},
 
 	addAuthAudiencesListener: authAudiencesStore.addListener,
-
-	unsetPrivateConfig: () => {
-		config.CONTROLLER_AUTH_KEY = null;
-	},
 
 	setAuth: (token: types.OAuthToken | null) => {
 		config.AUTH_TOKEN = token;

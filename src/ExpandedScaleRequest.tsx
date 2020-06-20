@@ -139,7 +139,7 @@ export default function({ dispatch: callerDispatch }: Props) {
 	const dispatch = useMergeDispatch(localDispatch, callerDispatch);
 	const s = scale || new ScaleRequest();
 
-	const { appID, releaseID, scaleRequestID } = matchParams;
+	const { appID, releaseID, scaleRequestID, clusterHash } = matchParams;
 	const appName = `apps/${appID}`;
 	const releaseName = `${appName}/releases/${releaseID}`;
 	const scaleRequestName = `${releaseName}/scales/${scaleRequestID}`;
@@ -157,9 +157,9 @@ export default function({ dispatch: callerDispatch }: Props) {
 	const handleCloseBtnClick = React.useCallback(
 		(e: React.SyntheticEvent) => {
 			e.preventDefault();
-			history.push({ pathname: `/${appName}`, search: urlParams.toString() });
+			history.push({ pathname: `/clusters/${clusterHash}/${appName}`, search: urlParams.toString() });
 		},
-		[appName, urlParams, history]
+		[appName, urlParams, history, clusterHash]
 	);
 
 	if (scaleLoading) return <Loading />;

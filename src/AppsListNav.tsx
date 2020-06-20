@@ -147,7 +147,7 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 export interface Props {}
 
 export default function AppsListNav(props: Props) {
-	const { location, urlParams } = useRouter();
+	const { location, urlParams, match } = useRouter();
 	const [
 		{
 			appsState: { nextPageToken, fetchNextPage, loading: isLoading, error: appsError },
@@ -244,7 +244,7 @@ export default function AppsListNav(props: Props) {
 
 	const appRoute = React.useCallback(
 		(app: App) => {
-			const path = `/${app.getName()}`; // e.g. /apps/48a2d322-5cfe-4323-8823-4dad4528c090
+			const path = `/clusters/${(match.params as any).clusterHash}/${app.getName()}`; // e.g. /apps/48a2d322-5cfe-4323-8823-4dad4528c090
 			return {
 				path,
 				search,
@@ -252,7 +252,7 @@ export default function AppsListNav(props: Props) {
 				selected: location.pathname === path
 			};
 		},
-		[location.pathname, search]
+		[location.pathname, search, match]
 	);
 
 	return (

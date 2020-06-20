@@ -484,10 +484,15 @@ const ReleaseHistoryRelease = React.memo(
 	) {
 		const release = deployment.getNewRelease();
 		const prevRelease = deployment.getOldRelease() || null;
-		const { urlParams, history } = useRouter();
+		const {
+			urlParams,
+			history,
+			match: { params: matchParams }
+		} = useRouter();
+		const { clusterHash } = matchParams;
 		const handleClick = React.useCallback(() => {
-			history.push({ pathname: `/${deployment.getName()}`, search: urlParams.toString() });
-		}, [deployment, urlParams, history]);
+			history.push({ pathname: `/clusters/${clusterHash}/${deployment.getName()}`, search: urlParams.toString() });
+		}, [clusterHash, deployment, urlParams, history]);
 		if (release === undefined) return null;
 		return (
 			<SelectableBox ref={ref} selected={selected} highlighted={isCurrent} {...boxProps} onClick={handleClick}>
@@ -521,10 +526,15 @@ const ReleaseHistoryScale = React.memo(
 		{ scaleRequest: s, selected, isCurrent, currentReleaseName, dispatch, ...boxProps }: ReleaseHistoryScaleProps,
 		ref: any
 	) {
-		const { urlParams, history } = useRouter();
+		const {
+			urlParams,
+			history,
+			match: { params: matchParams }
+		} = useRouter();
+		const { clusterHash } = matchParams;
 		const handleClick = React.useCallback(() => {
-			history.push({ pathname: `/${s.getName()}`, search: urlParams.toString() });
-		}, [s, urlParams, history]);
+			history.push({ pathname: `/clusters/${clusterHash}/${s.getName()}`, search: urlParams.toString() });
+		}, [clusterHash, s, urlParams, history]);
 
 		const diff = protoMapDiff(s.getOldProcessesMap(), s.getNewProcessesMap(), DiffOption.INCLUDE_UNCHANGED);
 
@@ -632,9 +642,10 @@ function ReleaseHistory({ appName }: Props) {
 
 	const {
 		urlParams,
-		match: { path: parentRoutePath },
+		match: { path: parentRoutePath, params: matchParams },
 		history
 	} = useRouter();
+	const { clusterHash } = matchParams;
 	const releasesListFilters = [urlParams.getAll('rhf'), ['code', 'env', 'scale']].find((i) => i.length > 0) as string[];
 
 	const rhf = releasesListFilters;
@@ -671,7 +682,7 @@ function ReleaseHistory({ appName }: Props) {
 	);
 
 	const handleSelectionCancel = () => {
-		history.push({ pathname: `/${appName}`, search: urlParams.toString() });
+		history.push({ pathname: `/clusters/${clusterHash}/${appName}`, search: urlParams.toString() });
 	};
 
 	const handleDeployCancel = () => {

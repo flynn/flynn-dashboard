@@ -64,7 +64,7 @@ export default function Cluster({ clusterHash }: Props) {
 					<React.Suspense fallback={<Loading />}>
 						<Switch>
 							<Route
-								path="/apps/:appID"
+								path="/clusters/:clusterHash/apps/:appID"
 								render={({
 									match: {
 										params: { appID }
@@ -74,7 +74,7 @@ export default function Cluster({ clusterHash }: Props) {
 									return <AppComponent key={appName} name={appName} />;
 								}}
 							/>
-							<Route path="/">
+							<Route path="/clusters/:clusterHash">
 								<Heading>Select an app to begin.</Heading>
 							</Route>
 						</Switch>

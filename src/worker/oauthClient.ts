@@ -42,6 +42,7 @@ function cancelAuthorization() {
 
 const DBKeys = {
 	SERVER_META: 'servermeta',
+	SERVER_META_CACHED_AT: 'servermetatimestamp',
 	AUTHORIZATION_CACHE: 'cache',
 	CALLBACK_RESPONSE: 'callbackresponse',
 	REFRESH_TOKEN: 'refresh_token',
@@ -58,11 +59,14 @@ function dbClearAuth(): Promise<any> {
 }
 
 export async function initClient(clientID: string, audienceHash: string | null) {
+	debug('[initClient]: getting audiences', clientID);
 	const audiences = await getAudiences();
+	debug('[initClient]: posting audiences', clientID);
 	await postMessage(clientID, {
 		type: types.MessageType.AUTH_AUDIENCES,
 		payload: audiences
 	});
+	debug('[initClient]: determining auth token', clientID);
 
 	const refreshToken = await getRefreshToken();
 	const token = audienceHash ? await getToken(audienceHash) : null;
@@ -94,7 +98,9 @@ export async function initClient(clientID: string, audienceHash: string | null) 
 		// clear any existing error messages from the UI
 		await clearErrors();
 
+		debug('[initClient]: generating auth url');
 		const url = await generateAuthorizationURL(clientID);
+		debug('[initClient]: requesting auth');
 		await postMessage(clientID, {
 			type: types.MessageType.AUTH_REQUEST,
 			payload: url
@@ -271,14 +277,8 @@ function codePointCompare(a: string, b: string): boolean {
 }
 
 async function getServerMeta(): Promise<ServerMetadata> {
+	debug('[getServerMeta]');
 	const config = await getConfig();
-	const cachedServerMeta = ((await dbGet(DBKeys.SERVER_META)) as ServerMetadata) || null;
-	if (cachedServerMeta) {
-		if (codePointCompare(config.OAUTH_ISSUER, cachedServerMeta.issuer)) {
-			return cachedServerMeta;
-		}
-	}
-
 	const url = `${config.OAUTH_ISSUER}/.well-known/oauth-authorization-server`;
 	const res = await retryFetch(url);
 	const meta = await res.json();
@@ -287,7 +287,6 @@ async function getServerMeta(): Promise<ServerMetadata> {
 			`Error verifying OAuth Server Metadata: Issuer mismatch: "${config.OAUTH_ISSUER}" != ${meta.issuer}`
 		);
 	}
-	await dbSet(DBKeys.SERVER_META, meta);
 	return meta;
 }
 
@@ -428,7 +427,12 @@ async function doTokenExchange(audienceHash: string | null, params: types.OAuthC
 }
 
 async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): Promise<types.OAuthAudience[]> {
+	debug('[fetchAudiences]', refreshToken);
+
 	const meta = await getServerMeta();
+
+	debug('[fetchAudiences]', meta.audiences_endpoint);
+
 	const res = await fetch(meta.audiences_endpoint, {
 		method: 'GET',
 		headers: {
@@ -436,7 +440,13 @@ async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): 
 		},
 		signal: abortSignal
 	});
-	const body = await res.json();
+	let body: any;
+	try {
+		body = await res.json();
+	} catch (error) {
+		debug('[fetchAudiences]: error parsing response body', error);
+		throw error;
+	}
 	const audiences = await asyncReduce(
 		(body || {}).audiences || [],
 		async (m: types.OAuthAudience[], a: types.OAuthAudience) => {
@@ -454,8 +464,8 @@ async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): 
 const audienceByHash = new Map<string, types.OAuthAudience>();
 
 async function getAudiences(): Promise<types.OAuthAudience[]> {
-	const audiences = ((await dbGet(DBKeys.AUDIENCES)) || null) as types.OAuthAudience[] | null;
-	if (audiences) return audiences;
+	// const audiences = ((await dbGet(DBKeys.AUDIENCES)) || null) as types.OAuthAudience[] | null;
+	// if (audiences) return audiences;
 	const refreshToken = await getRefreshToken();
 	if (!refreshToken) return [];
 	return await fetchAudiences(refreshToken.refresh_token);

@@ -131,13 +131,21 @@ export default function AppComponent(props: Props) {
 	] = React.useReducer(reducer, initialState(props));
 	useAppWithDispatch(name, dispatch);
 
+	const {
+		history,
+		location,
+		urlParams,
+		match: { params: matchParams }
+	} = useRouter();
+	const { clusterHash } = matchParams;
+
 	React.useEffect(
 		() => {
 			if (appError) {
 				// the error is intentionally not canceled
 				if (app && isNotFoundError(appError)) {
 					handleError(new Error(`"${app.getDisplayName()}" has been deleted!`));
-					history.push('/' + location.search);
+					history.push(`/clusters/${clusterHash}/` + location.search);
 				} else {
 					handleError(
 						Object.assign(
@@ -148,11 +156,9 @@ export default function AppComponent(props: Props) {
 				}
 			}
 		},
-		[appError] // eslint-disable-line react-hooks/exhaustive-deps
+		[clusterHash, appError] // eslint-disable-line react-hooks/exhaustive-deps
 	);
 	React.useDebugValue(`App(${app ? name : 'null'})${appLoading ? ' (Loading)' : ''}`);
-
-	const { history, location, urlParams } = useRouter();
 
 	let panelIndex = 0;
 	const panels = app

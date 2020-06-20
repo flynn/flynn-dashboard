@@ -52,7 +52,6 @@ export enum MessageType {
 	AUTH_CALLBACK = 'AUTH_CALLBACK',
 	AUTH_TOKEN = 'AUTH_TOKEN',
 	AUTH_AUDIENCES = 'AUTH_AUDIENCES',
-	PICK_AUTH_AUDIENCE = 'PICK_AUTH_AUDIENCE',
 	AUTH_ERROR = 'AUTH_ERROR',
 	ERROR = 'ERROR',
 	CLEAR_ERROR = 'CLEAR_ERROR'
@@ -110,11 +109,6 @@ export interface AuthAudiencesMessage {
 	payload: OAuthAudience[];
 }
 
-export interface PickAudienceMessage {
-	type: MessageType.PICK_AUTH_AUDIENCE;
-	payload: string;
-}
-
 export interface AuthErrorMessage {
 	type: MessageType.AUTH_ERROR;
 	payload: ErrorWithID;
@@ -142,7 +136,6 @@ export type Message =
 	| AuthCallbackMessage
 	| AuthTokenMessage
 	| AuthAudiencesMessage
-	| PickAudienceMessage
 	| AuthErrorMessage
 	| ErrorMessage
 	| ClearErrorMessage;

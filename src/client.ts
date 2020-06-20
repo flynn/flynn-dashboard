@@ -3,7 +3,7 @@ import { Timestamp } from 'google-protobuf/google/protobuf/timestamp_pb';
 import { BrowserHeaders } from 'browser-headers';
 import * as timestamp_pb from 'google-protobuf/google/protobuf/timestamp_pb';
 
-import Config, { PrivateConfig } from './config';
+import Config from './config';
 import { ControllerClient, ServiceError, Status, ResponseStream } from './generated/controller_pb_service';
 import {
 	StreamAppsRequest,
@@ -29,10 +29,6 @@ import {
 } from './generated/controller_pb';
 
 export interface Client {
-	// auth
-	login: (token: string, cb: AuthCallback) => CancelFunc;
-	logout: (cb: AuthCallback) => CancelFunc;
-
 	// read API
 	streamApps: (cb: AppsCallback, ...reqModifiers: RequestModifier<StreamAppsRequest>[]) => CancelFunc;
 	streamReleases: (cb: ReleasesCallback, ...reqModifiers: RequestModifier<StreamReleasesRequest>[]) => CancelFunc;
@@ -636,67 +632,6 @@ class _Client implements Client {
 	private _cc: ControllerClient;
 	constructor(cc: ControllerClient) {
 		this._cc = cc;
-	}
-
-	public login(token: string, cb: AuthCallback): CancelFunc {
-		var controller = new AbortController();
-		var signal = controller.signal;
-		fetch('/login', {
-			method: 'POST',
-			signal,
-			mode: 'cors',
-			cache: 'no-cache',
-			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ token })
-		})
-			.then((response) => {
-				if (response.ok) {
-					return response.json();
-				} else {
-					return response.json().then((errorJSON) => {
-						throw new Error(`[${errorJSON.code}] ${errorJSON.message}`);
-					});
-				}
-			})
-			.then((conf: PrivateConfig) => {
-				Object.assign(Config, conf);
-				cb({ authenticated: true }, null);
-			})
-			.catch((error) => {
-				cb(null, error);
-			});
-		return () => {
-			controller.abort();
-		};
-	}
-
-	public logout(cb: AuthCallback): CancelFunc {
-		var controller = new AbortController();
-		var signal = controller.signal;
-		fetch('/logout', {
-			method: 'POST',
-			signal,
-			mode: 'cors',
-			cache: 'no-cache',
-			credentials: 'same-origin'
-		})
-			.then((response) => {
-				if (response.ok) {
-					Config.unsetPrivateConfig();
-					cb({ authenticated: false }, null);
-				} else {
-					throw new Error(`Something went wrong logging out`);
-				}
-			})
-			.catch((error) => {
-				cb(null, error);
-			});
-		return () => {
-			controller.abort();
-		};
 	}
 
 	public streamApps(cb: AppsCallback, ...reqModifiers: RequestModifier<StreamAppsRequest>[]): CancelFunc {
