@@ -1028,6 +1028,11 @@ class _Client implements Client {
 	}
 }
 
-const cc = new ControllerClient(Config.CONTROLLER_HOST, { debug: false });
-
-export default new _Client(cc);
+const clients = new Map<string, Client>();
+export default function(controllerHost: string): Client {
+	let client = clients.get(controllerHost);
+	if (client) return client;
+	client = new _Client(new ControllerClient(controllerHost, { debug: false }));
+	clients.set(controllerHost, client);
+	return client;
+}

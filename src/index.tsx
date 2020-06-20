@@ -40,7 +40,11 @@ if (window.location.pathname === '/oauth/callback') {
 			if (event.origin !== getOrigin()) return;
 			const message = event.data as workerTypes.AuthCallbackMessage;
 			if (message.type !== workerTypes.MessageType.AUTH_CALLBACK) return;
-			serviceWorker.postMessage(message);
+			serviceWorker.postMessage(
+				Object.assign({}, message, {
+					audience: serviceWorker.getAudience()
+				})
+			);
 		};
 		window.addEventListener('message', receiveMessage);
 	});

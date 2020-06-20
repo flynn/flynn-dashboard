@@ -1,7 +1,6 @@
 import { PublicConfig } from './types';
 
 const Config: PublicConfig = {
-	CONTROLLER_HOST: '',
 	OAUTH_ISSUER: '',
 	OAUTH_CLIENT_ID: '',
 	OAUTH_CALLBACK_URI: ''

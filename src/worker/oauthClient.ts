@@ -6,11 +6,12 @@ import { get as dbGet, set as dbSet, del as dbDel } from 'idb-keyval';
 
 import * as types from './types';
 import { getConfig, hasActiveClientID } from './config';
-import { encode as base64URLEncode } from '../util/base64url';
 import { postMessageAll, postMessage } from './external';
-import { isTokenValid, canRefreshToken } from './tokenHelpers';
+import { isTokenValid, isRefreshTokenValid } from './tokenHelpers';
 import _debug from './debug';
 import retryFetch from './retryFetch';
+import { randomString, base64, sha256, sha1, hex } from '../util/crypto';
+import asyncReduce from '../util/asyncReduce';
 
 function debug(msg: string, ...args: any[]) {
 	_debug(`[oauthClient]: ${msg}`, ...args);
@@ -43,7 +44,9 @@ const DBKeys = {
 	SERVER_META: 'servermeta',
 	AUTHORIZATION_CACHE: 'cache',
 	CALLBACK_RESPONSE: 'callbackresponse',
-	TOKEN: 'token'
+	REFRESH_TOKEN: 'refresh_token',
+	TOKENS: 'token',
+	AUDIENCES: 'audiences'
 };
 
 function dbClearAuth(): Promise<any> {
@@ -54,21 +57,27 @@ function dbClearAuth(): Promise<any> {
 	);
 }
 
-export async function initClient(clientID: string, audience: string | null) {
-	const token = audience ? await getToken(audience) : null;
+export async function initClient(clientID: string, audienceHash: string | null) {
+	const audiences = await getAudiences();
+	await postMessage(clientID, {
+		type: types.MessageType.AUTH_AUDIENCES,
+		payload: audiences
+	});
+
+	const refreshToken = await getRefreshToken();
+	const token = audienceHash ? await getToken(audienceHash) : null;
 	if (token && isTokenValid(token)) {
 		debug('[initClient]: using existing valid token', token);
 		// setToken will handle setting up the refresh cycle
-		await setToken(audience, token);
-		return;
-	} else if (audience && canRefreshToken(token)) {
-		debug('[initClient]: attempting to refresh existing token', token);
+		await setToken(audienceHash, token);
+	} else if (audienceHash && refreshToken && isRefreshTokenValid(refreshToken)) {
+		debug('[initClient]: using existing valid refresh token to get audience token', audienceHash, refreshToken);
 
-		try {
-			await doTokenRefresh(audience, (token as types.OAuthToken).refresh_token);
-		} catch (error) {
-			await handleError(types.MessageType.AUTH_ERROR, error);
-		}
+		await doTokenRefresh(audienceHash, refreshToken.refresh_token);
+	} else if (refreshToken && isRefreshTokenValid(refreshToken)) {
+		debug('[initClient]: using existing valid refresh token', refreshToken);
+		// setToken will handle setting up the refresh cycle
+		await setToken(null, refreshToken);
 	} else if (
 		!clientState.authorizationInProgress ||
 		(clientState.authorizationClientID && !hasActiveClientID(clientState.authorizationClientID))
@@ -95,13 +104,13 @@ export async function initClient(clientID: string, audience: string | null) {
 	}
 }
 
-export async function sendToken(clientID: string, audience: string) {
-	const token = await getToken(audience);
+export async function sendToken(clientID: string, audienceHash: string) {
+	const token = await getToken(audienceHash);
 	if (isTokenValid(token)) {
 		debug('sending token to', clientID);
 		await postMessage(clientID, {
 			type: types.MessageType.AUTH_TOKEN,
-			audience,
+			audience: audienceHash,
 			payload: token as types.OAuthToken
 		});
 	}
@@ -115,8 +124,12 @@ export async function handleAuthError(error: Error) {
 	await dbClearAuth();
 }
 
-export async function handleAuthorizationCallback(clientID: string, queryString: string): Promise<void> {
-	debug('handleAuthorizationCallback', clientID, queryString);
+export async function handleAuthorizationCallback(
+	clientID: string,
+	audienceHash: string | null,
+	queryString: string
+): Promise<void> {
+	debug('handleAuthorizationCallback', clientID, audienceHash, queryString);
 
 	if (clientID !== clientState.authorizationClientID) {
 		debug('[handleAuthorizationCallback]: [WARNING]: clientID mismatch', clientID, clientState.authorizationClientID);
@@ -131,7 +144,7 @@ export async function handleAuthorizationCallback(clientID: string, queryString:
 			error_description: params.get('error_description') || null
 		};
 		await dbSet(DBKeys.CALLBACK_RESPONSE, res);
-		await doTokenExchange(res);
+		await doTokenExchange(audienceHash, res);
 
 		cancelAuthorization();
 	} catch (error) {
@@ -178,21 +191,25 @@ function calcDelay(min: number, max: number, val: number): number {
 	return Math.max(val - max, min);
 }
 
-async function setToken(audience: string | null, token: types.OAuthToken) {
-	debug('[setToken]', audience, token);
+async function setToken(audienceHash: string | null, token: types.OAuthToken) {
+	debug('[setToken]', audienceHash, token);
 
-	if (audience) {
-		clearTimeout(refreshTokenTimeout);
+	clearTimeout(refreshTokenTimeout);
 
+	if (audienceHash) {
 		await postMessageAll({
 			type: types.MessageType.AUTH_TOKEN,
-			audience,
+			audience: audienceHash,
 			payload: token
 		});
-	}
-	await dbSet(DBKeys.TOKEN, token);
 
-	if (audience && canRefreshToken(token)) {
+		const tokenMap = await getTokenMap();
+		tokenMap.set(audienceHash, token);
+		await dbSet(DBKeys.TOKENS, tokenMap);
+	}
+	await dbSet(DBKeys.REFRESH_TOKEN, token);
+
+	if (isRefreshTokenValid(token)) {
 		const delta = Date.now() - token.issued_time;
 		const expiresInMs = token.expires_in * 1000 - delta;
 		const minRefreshDelayMs = 5000;
@@ -202,7 +219,7 @@ async function setToken(audience: string | null, token: types.OAuthToken) {
 		debug(`[setToken]: token will refresh in ${refreshDelayMs}ms and expires in ${expiresInMs}`);
 		refreshTokenTimeout = setTimeout(async () => {
 			try {
-				await doTokenRefresh(audience, token.refresh_token);
+				await doTokenRefresh(audienceHash, token.refresh_token);
 			} catch (error) {
 				await handleError(types.MessageType.AUTH_ERROR, error);
 				await dbClearAuth();
@@ -211,9 +228,24 @@ async function setToken(audience: string | null, token: types.OAuthToken) {
 	}
 }
 
-async function getToken(audience: string): Promise<types.OAuthToken | null> {
+type TokenMap = Map<string, types.OAuthToken>;
+async function getTokenMap(): Promise<TokenMap> {
+	const tokenMap = (await dbGet(DBKeys.TOKENS)) || new Map<string, types.OAuthToken>();
+	return tokenMap as TokenMap;
+}
+
+async function getToken(audienceHash: string): Promise<types.OAuthToken | null> {
 	try {
-		const token = (await dbGet(DBKeys.TOKEN)) || null;
+		const tokenMap = await getTokenMap();
+		return tokenMap.get(audienceHash) || null;
+	} catch (e) {
+		return null;
+	}
+}
+
+async function getRefreshToken(): Promise<types.OAuthToken | null> {
+	try {
+		const token = (await dbGet(DBKeys.REFRESH_TOKEN)) || null;
 		return token as types.OAuthToken | null;
 	} catch (e) {
 		return null;
@@ -257,35 +289,6 @@ async function getServerMeta(): Promise<ServerMetadata> {
 	}
 	await dbSet(DBKeys.SERVER_META, meta);
 	return meta;
-}
-
-async function base64(input: ArrayBuffer): Promise<string> {
-	return Promise.resolve(base64URLEncode(String.fromCharCode(...new Uint8Array(input))));
-}
-
-async function sha256(input: string): Promise<ArrayBuffer> {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(input);
-	return crypto.subtle.digest('SHA-256', data);
-}
-
-function randomString(length: number): string {
-	const randomValues = random(length * 2);
-	return hex(randomValues).slice(0, length);
-}
-
-function random(length: number): ArrayBuffer {
-	const buffer = new ArrayBuffer(length);
-	const array = new Uint32Array(buffer);
-	crypto.getRandomValues(array);
-	return buffer;
-}
-
-function hex(input: ArrayBuffer): string {
-	const view = new Int32Array(input);
-	return Array.from(view, function(b) {
-		return ('0' + (b & 0xff).toString(16)).slice(-2);
-	}).join('');
 }
 
 async function generateCodeChallenge(): Promise<[string, string]> {
@@ -339,10 +342,12 @@ function buildError(error: TokenError, message = ''): Error {
 	});
 }
 
-async function doTokenExchange(params: types.OAuthCallbackResponse) {
+async function doTokenExchange(audienceHash: string | null, params: types.OAuthCallbackResponse) {
 	const abortSignal = clientState.authorizationAbortController
 		? clientState.authorizationAbortController.signal
 		: undefined;
+
+	const audience = audienceHash ? audienceFromHash(audienceHash) : null;
 
 	const cachedValues = ((await dbGet(DBKeys.AUTHORIZATION_CACHE)) as types.OAuthCachedValues) || null;
 	if (!cachedValues) {
@@ -377,10 +382,12 @@ async function doTokenExchange(params: types.OAuthCallbackResponse) {
 	}
 
 	const body = new URLSearchParams();
+	if (audience) {
+		body.set('audience', audience.url);
+	}
 	body.set('grant_type', 'authorization_code');
 	body.set('code', decodeURIComponent(params.code || ''));
 	body.set('code_verifier', cachedValues.codeVerifier);
-	// body.set('code_verifier', 'foo');
 	body.set('redirect_uri', cachedValues.redirectURI);
 	body.set('client_id', config.OAUTH_CLIENT_ID);
 	const res = await retryFetch(meta.token_endpoint, {
@@ -397,14 +404,30 @@ async function doTokenExchange(params: types.OAuthCallbackResponse) {
 	}
 	if (!token.error) {
 		token.issued_time = Date.now();
-		await setToken(null, token as types.OAuthToken);
-		await fetchAudiences(token.refresh_token, abortSignal);
+		await setToken(audienceHash, token as types.OAuthToken);
+
+		const audiences = await fetchAudiences(token.refresh_token, abortSignal);
+		await postMessageAll({
+			type: types.MessageType.AUTH_AUDIENCES,
+			payload: audiences
+		});
+
+		if (!audience && audienceHash) {
+			// we know what audience we want but didn't have the url until
+			// fetchAudiences, so get an access token now that we have it
+			try {
+				await doTokenRefresh(audienceHash, token.refresh_token);
+			} catch (error) {
+				// any error here likely means the selected audience is invalid
+				debug('[doTokenExchange]: Error getting access token for audience', audienceHash, error);
+			}
+		}
 	} else {
 		throw buildError(token as TokenError, 'Error getting auth token');
 	}
 }
 
-async function fetchAudiences(refreshToken: string, abortSignal: AbortSignal | undefined) {
+async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): Promise<types.OAuthAudience[]> {
 	const meta = await getServerMeta();
 	const res = await fetch(meta.audiences_endpoint, {
 		method: 'GET',
@@ -413,18 +436,54 @@ async function fetchAudiences(refreshToken: string, abortSignal: AbortSignal | u
 		},
 		signal: abortSignal
 	});
-	const audiences = await res.json();
+	const body = await res.json();
+	const audiences = await asyncReduce(
+		(body || {}).audiences || [],
+		async (m: types.OAuthAudience[], a: types.OAuthAudience) => {
+			if (a.type !== 'flynn_controller') return m;
+			const hash = hex(await sha1(a.url));
+			return m.concat(Object.assign({ hash }, a));
+		},
+		[] as types.OAuthAudience[]
+	);
 
-	console.log('AUDIENCES', audiences);
+	await setAudiences(audiences);
+	return audiences;
+}
 
-	postMessageAll({
-		type: types.MessageType.AUTH_AUDIENCES,
-		payload: audiences
+const audienceByHash = new Map<string, types.OAuthAudience>();
+
+async function getAudiences(): Promise<types.OAuthAudience[]> {
+	const audiences = ((await dbGet(DBKeys.AUDIENCES)) || null) as types.OAuthAudience[] | null;
+	if (audiences) return audiences;
+	const refreshToken = await getRefreshToken();
+	if (!refreshToken) return [];
+	return await fetchAudiences(refreshToken.refresh_token);
+}
+
+async function setAudiences(audiences: types.OAuthAudience[]) {
+	debug('[setAudiences]', audiences);
+
+	await dbSet(DBKeys.AUDIENCES, audiences);
+
+	audiences.forEach((a) => {
+		audienceByHash.set(a.hash, a);
 	});
 }
 
-async function doTokenRefresh(audience: string, refreshToken: string) {
-	debug('[doTokenRefresh]', refreshToken);
+function audienceFromHash(hash: string): types.OAuthAudience | null {
+	return audienceByHash.get(hash) || null;
+}
+
+async function doTokenRefresh(audienceHash: string | null, refreshToken: string) {
+	if (!audienceHash) return;
+	debug('[doTokenRefresh]', audienceHash, refreshToken);
+
+	const audience = audienceHash ? audienceFromHash(audienceHash) : null;
+	if (audienceHash && !audience) {
+		debug('[doTokenRefresh] Unknown audience', audienceHash, Array.from(audienceByHash.entries()));
+		throw new Error(`Unknown audience ${audienceHash}`);
+	}
 
 	const config = await getConfig();
 	const meta = await getServerMeta();
@@ -432,7 +491,9 @@ async function doTokenRefresh(audience: string, refreshToken: string) {
 	body.set('grant_type', 'refresh_token');
 	body.set('refresh_token', refreshToken);
 	body.set('client_id', config.OAUTH_CLIENT_ID);
-	body.set('audience', audience);
+	if (audience) {
+		body.set('audience', audience.url);
+	}
 	const res = await retryFetch(meta.token_endpoint, {
 		method: 'POST',
 		headers: {
@@ -442,11 +503,11 @@ async function doTokenRefresh(audience: string, refreshToken: string) {
 	});
 	const token = await res.json();
 	if (!token.error) {
-		debug('[doTokenRefresh] success', audience, token);
+		debug('[doTokenRefresh] success', audienceHash, token);
 		token.issued_time = Date.now();
-		await setToken(audience, token as types.OAuthToken);
+		await setToken(audienceHash, token as types.OAuthToken);
 	} else {
-		debug('[doTokenRefresh] error', audience, token);
+		debug('[doTokenRefresh] error', audienceHash, token);
 		throw buildError(token, `Error refreshing auth token for audience (${audience})`);
 	}
 }
