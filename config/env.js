@@ -1,5 +1,3 @@
-'use strict';
-
 const fs = require('fs');
 const path = require('path');
 const paths = require('./paths');
@@ -57,8 +55,6 @@ process.env.NODE_PATH = (process.env.NODE_PATH || '')
 function getClientEnvironment(publicUrl) {
 	const nodeEnv = process.env.NODE_ENV || 'development';
 	const raw = {
-		CONTROLLER_HOST: process.env.CONTROLLER_HOST,
-
 		// Useful for determining whether we’re running in production mode.
 		// Most importantly, it switches React into the correct mode.
 		NODE_ENV: nodeEnv,
@@ -74,7 +70,6 @@ function getClientEnvironment(publicUrl) {
 		PUBLIC_CONFIG_JSON: '{}',
 		PRIVATE_CONFIG_JSON: '{}',
 
-		CONTROLLER_AUTH_KEY: process.env.CONTROLLER_AUTH_KEY,
 		OAUTH_ISSUER: process.env.OAUTH_ISSUER,
 		OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID
 	};

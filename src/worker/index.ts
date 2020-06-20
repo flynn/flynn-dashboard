@@ -62,7 +62,11 @@ function handleMessage(senderID: string, message: types.Message): Promise<void> 
 				case types.MessageType.CONFIG:
 					loadConfig(message.payload);
 					// make sure the client is authorized
-					oauthClient.initClient(senderID);
+					oauthClient.initClient(senderID, message.audience);
+					break;
+
+				case types.MessageType.GET_AUTH_TOKEN:
+					oauthClient.initClient(senderID, message.audience);
 					break;
 
 				case types.MessageType.AUTH_ERROR:
@@ -70,11 +74,11 @@ function handleMessage(senderID: string, message: types.Message): Promise<void> 
 					break;
 
 				case types.MessageType.AUTH_CALLBACK:
-					oauthClient.handleAuthorizationCallback(senderID, message.payload);
+					oauthClient.handleAuthorizationCallback(senderID, message.audience, message.payload);
 					break;
 
 				case types.MessageType.RETRY_AUTH:
-					oauthClient.initClient(senderID);
+					oauthClient.initClient(senderID, message.audience);
 					break;
 
 				case types.MessageType.PING:

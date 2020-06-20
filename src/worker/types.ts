@@ -1,5 +1,4 @@
 export interface PublicConfig {
-	CONTROLLER_HOST: string;
 	OAUTH_ISSUER: string;
 	OAUTH_CLIENT_ID: string;
 	OAUTH_CALLBACK_URI: string;
@@ -31,6 +30,13 @@ export interface OAuthToken {
 	issued_time: number;
 }
 
+export interface OAuthAudience {
+	name: string;
+	url: string;
+	hash: string;
+	type: string;
+}
+
 export interface ErrorWithID extends Error {
 	id: string;
 }
@@ -41,9 +47,11 @@ export enum MessageType {
 	PING = 'PING',
 	PONG = 'PONG',
 	RETRY_AUTH = 'RETRY_AUTH',
+	GET_AUTH_TOKEN = 'GET_AUTH_TOKEN',
 	AUTH_REQUEST = 'AUTH_REQUEST',
 	AUTH_CALLBACK = 'AUTH_CALLBACK',
 	AUTH_TOKEN = 'AUTH_TOKEN',
+	AUTH_AUDIENCES = 'AUTH_AUDIENCES',
 	AUTH_ERROR = 'AUTH_ERROR',
 	ERROR = 'ERROR',
 	CLEAR_ERROR = 'CLEAR_ERROR'
@@ -56,6 +64,7 @@ export interface UnknownMessage {
 
 export interface ConfigMessage {
 	type: MessageType.CONFIG;
+	audience: string | null;
 	payload: PublicConfig;
 }
 
@@ -70,6 +79,12 @@ export interface PongMessage {
 
 export interface RetryAuthMessage {
 	type: MessageType.RETRY_AUTH;
+	audience: string | null;
+}
+
+export interface GetAuthTokenMessage {
+	type: MessageType.GET_AUTH_TOKEN;
+	audience: string;
 }
 
 export interface AuthRequestMessage {
@@ -79,12 +94,19 @@ export interface AuthRequestMessage {
 
 export interface AuthCallbackMessage {
 	type: MessageType.AUTH_CALLBACK;
+	audience: string | null;
 	payload: string;
 }
 
 export interface AuthTokenMessage {
 	type: MessageType.AUTH_TOKEN;
+	audience: string;
 	payload: OAuthToken;
+}
+
+export interface AuthAudiencesMessage {
+	type: MessageType.AUTH_AUDIENCES;
+	payload: OAuthAudience[];
 }
 
 export interface AuthErrorMessage {
@@ -109,9 +131,11 @@ export type Message =
 	| PingMessage
 	| PongMessage
 	| RetryAuthMessage
+	| GetAuthTokenMessage
 	| AuthRequestMessage
 	| AuthCallbackMessage
 	| AuthTokenMessage
+	| AuthAudiencesMessage
 	| AuthErrorMessage
 	| ErrorMessage
 	| ClearErrorMessage;

@@ -1,79 +1,92 @@
-import ifDev from './ifDev';
 import * as types from './worker/types';
-import { isTokenValid } from './worker/tokenHelpers';
+import { default as createEmitter } from './util/emitter';
+import createBasicStore from './util/basicStore';
 
 export interface PublicConfig {
-	CONTROLLER_HOST: string;
 	OAUTH_ISSUER: string;
 	OAUTH_CLIENT_ID: string;
 }
 
 export interface PrivateConfig {
-	CONTROLLER_AUTH_KEY: string | null;
+	AUTH_AUDIENCES: types.OAuthAudience[];
 }
-
-type AuthCallback = (authenticated: boolean) => void;
-type AuthErrorCallback = (error: Error) => void;
-type CancelFunc = () => void;
 
 export interface Config extends PublicConfig, PrivateConfig {
 	AUTH_TOKEN: types.OAuthToken | null;
-	unsetPrivateConfig: () => void;
 	setAuth: (token: types.OAuthToken | null) => void;
-	authCallback: (fn: AuthCallback) => CancelFunc;
+	authCallback: typeof authEmitter.addListener;
 	isAuthenticated: () => boolean;
-	authErrorCallback: (fn: AuthErrorCallback) => CancelFunc;
+	authErrorCallback: typeof authErrorEmitter.addListener;
 	handleAuthError: (error: Error) => void;
+	audienceSelected: (hash: string) => void;
+	addAudienceSelectedListener: typeof selectedAuthAudienceStore.addListener;
+	getControllerURLFromHash: (hash: string) => string;
+	setAuthAudiences: (audiences: types.OAuthAudience[]) => void;
+	getAuthAudiences: () => types.OAuthAudience[];
+	addAuthAudiencesListener: typeof authAudiencesStore.addListener;
 }
 
-const authCallbacks = new Set<AuthCallback>();
-const authErrorCallbacks = new Set<AuthErrorCallback>();
+const authEmitter = createEmitter<boolean>();
+const authErrorEmitter = createEmitter<Error>();
+
+const authAudiencesStore = createBasicStore<types.OAuthAudience[]>([]);
+const selectedAuthAudienceStore = createBasicStore<string | null>(null);
+
+const authAudienceURLMap = new Map<string, string>();
+const authAudienceHashMap = new Map<string, string>();
 
 const config: Config = {
-	CONTROLLER_HOST: process.env.CONTROLLER_HOST || ifDev(() => 'https://controller.1.localflynn.com') || '',
-	CONTROLLER_AUTH_KEY: process.env.CONTROLLER_AUTH_KEY || null,
+	AUTH_AUDIENCES: authAudiencesStore.get() || [],
 
 	OAUTH_ISSUER: process.env.OAUTH_ISSUER || '',
 	OAUTH_CLIENT_ID: process.env.OAUTH_CLIENT_ID || '',
 
 	AUTH_TOKEN: null,
 
-	unsetPrivateConfig: () => {
-		config.CONTROLLER_AUTH_KEY = null;
+	audienceSelected: (hash: string) => {
+		selectedAuthAudienceStore.set(hash);
 	},
+
+	addAudienceSelectedListener: selectedAuthAudienceStore.addListener,
+
+	getControllerURLFromHash: (hash: string) => {
+		return authAudienceURLMap.get(hash) || '';
+	},
+
+	setAuthAudiences: (audiences: types.OAuthAudience[]) => {
+		audiences.forEach((a) => {
+			authAudienceURLMap.set(a.hash, a.url);
+			authAudienceHashMap.set(a.url, a.hash);
+		});
+		authAudiencesStore.set(audiences);
+	},
+
+	getAuthAudiences: () => {
+		return authAudiencesStore.get() || [];
+	},
+
+	addAuthAudiencesListener: authAudiencesStore.addListener,
 
 	setAuth: (token: types.OAuthToken | null) => {
 		config.AUTH_TOKEN = token;
 
 		const isAuthenticated = config.isAuthenticated();
-		authCallbacks.forEach((fn) => {
-			fn(isAuthenticated);
-		});
+		authEmitter.dispatch(isAuthenticated);
 	},
 
-	authCallback: (fn: AuthCallback) => {
-		authCallbacks.add(fn);
-		return () => {
-			authCallbacks.delete(fn);
-		};
-	},
+	authCallback: authEmitter.addListener,
 
 	isAuthenticated: () => {
 		// TODO(jvatic): use isAuthValid once bug is fixed where it returns false
 		// but no re-auth is triggered
-		return config.AUTH_TOKEN !== null;
+		return !!(config.AUTH_TOKEN && config.AUTH_TOKEN.access_token);
 	},
 
-	authErrorCallback: (fn: AuthErrorCallback) => {
-		authErrorCallbacks.add(fn);
-		return () => {
-			authErrorCallbacks.delete(fn);
-		};
-	},
+	authErrorCallback: authErrorEmitter.addListener,
 
 	handleAuthError: (error: Error) => {
-		authErrorCallbacks.forEach((fn) => fn(error));
-		if (authErrorCallbacks.size === 0) {
+		const n = authErrorEmitter.dispatch(error);
+		if (n === 0) {
 			throw error;
 		}
 	}

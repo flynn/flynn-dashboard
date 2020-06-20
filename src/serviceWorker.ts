@@ -14,6 +14,16 @@ function resolveRelativeURI(path: string): string {
 	return a.href;
 }
 
+function clusterHashFromPath(path: string): string {
+	const m = path.match(/\/clusters\/([^/]+)/);
+	return m ? m[1].slice(0) : '';
+}
+
+export function getAudience(): string | null {
+	const a = clusterHashFromPath(window.location.pathname) || null;
+	return a;
+}
+
 let handleError: ErrorHandler;
 
 function init(): () => void {
@@ -31,10 +41,18 @@ function init(): () => void {
 		});
 	});
 
+	const cancelAuthAudienceSelectedCallback = Config.addAudienceSelectedListener((audience: string | null) => {
+		if (!audience) return;
+		postMessage({
+			type: types.MessageType.GET_AUTH_TOKEN,
+			audience
+		});
+	});
+
 	postMessage({
 		type: types.MessageType.CONFIG,
+		audience: getAudience(),
 		payload: {
-			CONTROLLER_HOST: Config.CONTROLLER_HOST,
 			OAUTH_ISSUER: Config.OAUTH_ISSUER,
 			OAUTH_CLIENT_ID: Config.OAUTH_CLIENT_ID,
 			OAUTH_CALLBACK_URI: resolveRelativeURI('/oauth/callback')
@@ -56,6 +74,7 @@ function init(): () => void {
 		debug('clear init state');
 		clearInterval(intervalID);
 		cancelAuthErrorCallback();
+		cancelAuthAudienceSelectedCallback();
 	};
 }
 
@@ -147,9 +166,23 @@ function handleMessage(message: types.Message) {
 			// prompting a page reload)
 			break;
 
+		case types.MessageType.AUTH_AUDIENCES:
+			debug('[handleMessage]: AUTH_AUDIENCES', message.payload);
+			Config.setAuthAudiences(message.payload);
+			break;
+
 		case types.MessageType.AUTH_REQUEST:
 			debug('[handleMessage]: AUTH_REQUEST', message.payload);
-			window.open(message.payload);
+			if (!window.open(message.payload)) {
+				debug('[handleMessage]: failed to open window');
+				handleError(
+					Object.assign(new Error('Failed to open auth window'), {
+						retry: () => {
+							window.open(message.payload);
+						}
+					})
+				);
+			}
 			break;
 
 		case types.MessageType.AUTH_TOKEN:
@@ -167,7 +200,8 @@ function handleMessage(message: types.Message) {
 							payload: [(authError as any).id]
 						});
 						postMessage({
-							type: types.MessageType.RETRY_AUTH
+							type: types.MessageType.RETRY_AUTH,
+							audience: getAudience()
 						});
 					}
 				})

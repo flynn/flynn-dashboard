@@ -127,7 +127,7 @@ export default function ExpandedRelease({ dispatch: callerDispatch }: Props) {
 		history
 	} = useRouter();
 
-	const { appID, deploymentID } = matchParams;
+	const { appID, deploymentID, clusterHash } = matchParams;
 	const appName = `apps/${appID}`;
 	const deploymentName = `${appName}/deployments/${deploymentID}`;
 
@@ -195,9 +195,9 @@ export default function ExpandedRelease({ dispatch: callerDispatch }: Props) {
 	const handleCloseBtnClick = React.useCallback(
 		(e: React.SyntheticEvent) => {
 			e.preventDefault();
-			history.push({ pathname: `/${appName}`, search: urlParams.toString() });
+			history.push({ pathname: `/clusters/${clusterHash}/${appName}`, search: urlParams.toString() });
 		},
-		[appName, urlParams, history]
+		[clusterHash, appName, urlParams, history]
 	);
 
 	if (appLoading || currentReleaseLoading || deploymentLoading) return <Loading />;
