@@ -2,16 +2,16 @@ import * as types from './worker/types';
 import { default as createEmitter } from './util/emitter';
 import createBasicStore from './util/basicStore';
 
-export interface PublicConfig {
+interface PublicConfig {
 	OAUTH_ISSUER: string;
 	OAUTH_CLIENT_ID: string;
 }
 
-export interface PrivateConfig {
+interface PrivateConfig {
 	AUTH_AUDIENCES: types.OAuthAudience[];
 }
 
-export interface Config extends PublicConfig, PrivateConfig {
+interface Config extends PublicConfig, PrivateConfig {
 	AUTH_TOKEN: types.OAuthToken | null;
 	setAuth: (token: types.OAuthToken | null) => void;
 	authCallback: typeof authEmitter.addListener;

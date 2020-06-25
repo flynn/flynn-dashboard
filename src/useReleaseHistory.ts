@@ -27,7 +27,7 @@ export enum ActionType {
 
 type FetchNextPageFunction = (token: NextPageTokens | null) => CancelFunc;
 
-export class NextPageTokens {
+class NextPageTokens {
 	public scales: string;
 	public deployments: string;
 

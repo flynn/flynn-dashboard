@@ -55,7 +55,7 @@ export type Action = DeployReleaseAction | AppAction | AppReleaseAction | Deploy
 
 type Dispatcher = (actions: Action | Action[]) => void;
 
-export interface State {
+interface State {
 	// useApp
 	appState: AppState;
 
@@ -68,7 +68,7 @@ export interface State {
 
 type Reducer = (prevState: State, actions: Action | Action[]) => State;
 
-export function initialState(): State {
+function initialState(): State {
 	return {
 		// useApp
 		appState: initialAppState(),
@@ -81,7 +81,7 @@ export function initialState(): State {
 	};
 }
 
-export function reducer(prevState: State, actions: Action | Action[]): State {
+function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];
 	}

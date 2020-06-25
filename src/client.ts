@@ -54,18 +54,18 @@ interface AuthStatus {
 	authenticated: boolean;
 }
 
-export type ErrorWithCode = Error & ServiceError;
+type ErrorWithCode = Error & ServiceError;
 export type CancelFunc = () => void;
-export type AuthCallback = (s: AuthStatus | null, error: Error | null) => void;
-export type AppsCallback = (res: StreamAppsResponse, error: ErrorWithCode | null) => void;
-export type AppCallback = (app: App, error: ErrorWithCode | null) => void;
-export type ReleasesCallback = (res: StreamReleasesResponse, error: ErrorWithCode | null) => void;
-export type CreateScaleCallback = (sr: ScaleRequest, error: ErrorWithCode | null) => void;
-export type ReleaseCallback = (release: Release, error: ErrorWithCode | null) => void;
-export type ErrorCallback = (error: ErrorWithCode | null) => void;
-export type ScaleRequestsCallback = (res: StreamScalesResponse, error: ErrorWithCode | null) => void;
-export type DeploymentsCallback = (res: StreamDeploymentsResponse, error: ErrorWithCode | null) => void;
-export type ReleaseHistoryCallback = (res: StreamReleaseHistoryResponse, error: ErrorWithCode | null) => void;
+type AuthCallback = (s: AuthStatus | null, error: Error | null) => void;
+type AppsCallback = (res: StreamAppsResponse, error: ErrorWithCode | null) => void;
+type AppCallback = (app: App, error: ErrorWithCode | null) => void;
+type ReleasesCallback = (res: StreamReleasesResponse, error: ErrorWithCode | null) => void;
+type CreateScaleCallback = (sr: ScaleRequest, error: ErrorWithCode | null) => void;
+type ReleaseCallback = (release: Release, error: ErrorWithCode | null) => void;
+type ErrorCallback = (error: ErrorWithCode | null) => void;
+type ScaleRequestsCallback = (res: StreamScalesResponse, error: ErrorWithCode | null) => void;
+type DeploymentsCallback = (res: StreamDeploymentsResponse, error: ErrorWithCode | null) => void;
+type ReleaseHistoryCallback = (res: StreamReleaseHistoryResponse, error: ErrorWithCode | null) => void;
 
 export class ReleaseHistoryItem {
 	private _scale: ScaleRequest | null;
@@ -204,7 +204,7 @@ export type RequestModifier<T> = {
 	key: string;
 };
 
-export interface PaginatableRequest {
+interface PaginatableRequest {
 	getPageSize(): number;
 	setPageSize(value: number): void;
 
@@ -230,7 +230,7 @@ export function setPageToken(pageToken: string): RequestModifier<PaginatableRequ
 	);
 }
 
-export interface NameFilterable {
+interface NameFilterable {
 	clearNameFiltersList(): void;
 	getNameFiltersList(): Array<string>;
 	setNameFiltersList(value: Array<string>): void;
@@ -246,7 +246,7 @@ export function setNameFilters(...filterNames: string[]): RequestModifier<NameFi
 	);
 }
 
-export interface CreateStreamable {
+interface CreateStreamable {
 	setStreamCreates(value: boolean): void;
 }
 
@@ -259,7 +259,7 @@ export function setStreamCreates(): RequestModifier<CreateStreamable> {
 	);
 }
 
-export interface UpdateStreamable {
+interface UpdateStreamable {
 	setStreamUpdates(value: boolean): void;
 }
 

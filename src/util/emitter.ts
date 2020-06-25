@@ -1,4 +1,4 @@
-export type CallbackFn<T> = (payload: T) => void;
+type CallbackFn<T> = (payload: T) => void;
 
 type RemoveEventListenerFn = () => void;
 

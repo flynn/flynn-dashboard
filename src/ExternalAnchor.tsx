@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Anchor, AnchorProps } from 'grommet';
 import { Omit } from 'grommet/utils';
 
-export interface Props extends Omit<AnchorProps, 'onClick'> {
+interface Props extends Omit<AnchorProps, 'onClick'> {
 	onClick?: (event: React.MouseEvent) => void;
 	children: React.ReactNode;
 }

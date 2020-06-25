@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { debounce } from 'lodash';
 
-export interface Props {
+interface Props {
 	children: React.ReactNode;
 	timeoutMs?: number;
 }

@@ -1,7 +1,7 @@
 import { debounce } from 'lodash';
 
-export type CallbackFunction = (state: WindowedListState) => void;
-export type UnsubscribeFunction = () => void;
+type CallbackFunction = (state: WindowedListState) => void;
+type UnsubscribeFunction = () => void;
 
 export default class WindowedListState {
 	public viewportHeight: number; // viewport height in px

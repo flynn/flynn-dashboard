@@ -6,7 +6,7 @@ const state = {
 	dirtyKeys: new Set<string>()
 };
 
-export interface ContextObject {
+interface ContextObject {
 	key: string;
 	dirty: boolean;
 }

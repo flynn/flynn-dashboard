@@ -26,7 +26,7 @@ function handleNavProtectionDisabled() {
 	window.removeEventListener('beforeunload', handleWindowBeforeUnload);
 }
 
-export interface NavProtectionContextObject {
+interface NavProtectionContextObject {
 	params: URLSearchParams;
 }
 

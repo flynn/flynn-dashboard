@@ -1,6 +1,6 @@
 import { default as createEmitter, Emitter } from './emitter';
 
-export interface BasicStore<T> extends Emitter<T> {
+interface BasicStore<T> extends Emitter<T> {
 	get(): T | null;
 	set(value: T): number;
 }

@@ -16,7 +16,7 @@ const StyledLayer = styled(Layer)`
 	}}
 `;
 
-export interface Props {
+interface Props {
 	children: React.ReactNode;
 	onClose?: () => void;
 }

@@ -143,13 +143,3 @@ export function useAppScaleWithDispatch(appName: string, callerDispatch: Dispatc
 		return cancel;
 	}, [releaseName, client, dispatch]);
 }
-
-export default function useAppScale(appName: string) {
-	const [{ scale, loading, error, appLoading, appError }, localDispatch] = React.useReducer(reducer, initialState());
-	useAppScaleWithDispatch(appName, localDispatch);
-	return {
-		loading: appLoading || loading,
-		scale,
-		error: appError || error
-	};
-}

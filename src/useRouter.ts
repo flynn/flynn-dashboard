@@ -16,7 +16,7 @@ interface History<HistoryLocationState> extends Omit<H.History, 'push' | 'replac
 	replace(location: H.LocationDescriptorObject<HistoryLocationState>): boolean;
 }
 
-export interface UseRouterObejct<TParams> {
+interface UseRouterObejct<TParams> {
 	urlParams: URLSearchParams;
 	history: History<H.LocationState>;
 	location: H.LocationDescriptorObject;

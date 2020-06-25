@@ -38,7 +38,7 @@ export type Action = DeployScaleAction | ProcessScaleAction | ScaleAction | AppS
 
 type Dispatcher = (actions: Action | Action[]) => void;
 
-export interface State {
+interface State {
 	// useScale
 	scaleState: ScaleState;
 
@@ -53,7 +53,7 @@ export interface State {
 
 type Reducer = (prevState: State, actions: Action | Action[]) => State;
 
-export function initialState(): State {
+function initialState(): State {
 	return {
 		// useScale
 		scaleState: initialScaleState(),
@@ -67,7 +67,7 @@ export function initialState(): State {
 	};
 }
 
-export function reducer(prevState: State, actions: Action | Action[]): State {
+function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];
 	}

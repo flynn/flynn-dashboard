@@ -1,7 +1,7 @@
 import * as React from 'react';
 import useRelativeTimeString from './useRelativeTimeString';
 
-export interface Props {
+interface Props {
 	date: Date;
 }
 

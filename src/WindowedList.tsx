@@ -16,11 +16,11 @@ function findScrollParent(node: HTMLElement | null): HTMLElement | Window {
 	return window;
 }
 
-export interface ChildrenProps {
+interface ChildrenProps {
 	onItemRender: (index: number, node: HTMLElement | null) => void;
 }
 
-export interface Props {
+interface Props {
 	state: WindowedListState;
 	thresholdTop: number; // number of pixels to keep rendered beyond the top of viewport
 	children: (props: ChildrenProps) => React.ReactNode;
@@ -120,7 +120,7 @@ export default function WindowedList({ state, thresholdTop, children }: Props) {
 	return <>{children({ onItemRender })}</>;
 }
 
-export interface ItemProps extends ChildrenProps {
+interface ItemProps extends ChildrenProps {
 	index: number;
 	children: (ref: React.MutableRefObject<HTMLElement | null>) => React.ReactNode;
 }

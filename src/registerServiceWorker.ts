@@ -17,7 +17,7 @@ const isLocalhost = Boolean(
 		window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
 );
 
-export default function register() {
+export function register() {
 	if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
 		// The URL constructor is available in all browsers that support SW.
 		const publicUrl = new URL(process.env.PUBLIC_URL!, window.location.toString());
@@ -102,12 +102,4 @@ function checkValidServiceWorker(swUrl: string) {
 		.catch(() => {
 			console.log('No internet connection found. App is running in offline mode.');
 		});
-}
-
-export function unregister() {
-	if ('serviceWorker' in navigator) {
-		navigator.serviceWorker.ready.then((registration) => {
-			registration.unregister();
-		});
-	}
 }

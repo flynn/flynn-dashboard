@@ -23,7 +23,7 @@ export function randomString(length: number): string {
 	return hex(randomValues).slice(0, length);
 }
 
-export function random(length: number): ArrayBuffer {
+function random(length: number): ArrayBuffer {
 	const buffer = new ArrayBuffer(length);
 	const array = new Uint32Array(buffer);
 	crypto.getRandomValues(array);

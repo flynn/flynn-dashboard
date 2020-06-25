@@ -6,7 +6,7 @@ import { Release } from './generated/controller_pb';
 import KeyValueDiff from './KeyValueDiff';
 import TimeAgo from './TimeAgo';
 
-export interface ReleaseProps {
+interface ReleaseProps {
 	timestamp?: Date;
 	release: Release;
 	prevRelease?: Release | null;
