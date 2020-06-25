@@ -5,7 +5,6 @@ const Config: PublicConfig = {
 	OAUTH_CLIENT_ID: '',
 	OAUTH_CALLBACK_URI: ''
 };
-export default Config;
 
 type ConfigCallback = (config: PublicConfig) => void;
 

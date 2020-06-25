@@ -3,7 +3,7 @@ import { Anchor, AnchorProps } from 'grommet';
 import { Omit } from 'grommet/utils';
 import useRouter from './useRouter';
 
-export interface Props extends Omit<AnchorProps, 'onClick'> {
+interface Props extends Omit<AnchorProps, 'onClick'> {
 	path: string;
 	search?: string;
 	onClick?: (e: React.MouseEvent) => void;

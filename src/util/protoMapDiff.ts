@@ -8,7 +8,7 @@ export interface DiffOp<K, V> {
 
 export type Diff<K, V> = Array<DiffOp<K, V>>;
 
-export type DiffConflict<K, V> = [DiffOp<K, V>, DiffOp<K, V>];
+type DiffConflict<K, V> = [DiffOp<K, V>, DiffOp<K, V>];
 
 export enum DiffOption {
 	INCLUDE_UNCHANGED,

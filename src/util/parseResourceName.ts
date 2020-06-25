@@ -1,4 +1,4 @@
-export interface ResourceNameMap {
+interface ResourceNameMap {
 	[resource: string]: string;
 }
 

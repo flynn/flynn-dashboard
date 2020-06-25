@@ -106,13 +106,3 @@ export function useReleaseWithDispatch(releaseName: string, callerDispatch: Disp
 		return cancel;
 	}, [releaseName, client, dispatch]);
 }
-
-export default function useRelease(releaseName: string) {
-	const [{ release, error, loading }, dispatch] = React.useReducer(reducer, initialState());
-	useReleaseWithDispatch(releaseName, dispatch);
-	return {
-		release,
-		error,
-		loading
-	};
-}

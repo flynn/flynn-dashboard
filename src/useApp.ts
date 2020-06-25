@@ -104,13 +104,3 @@ export function useAppWithDispatch(appName: string, dispatch: Dispatcher) {
 		return cancel;
 	}, [appName, client, dispatch]);
 }
-
-export default function useApp(appName: string) {
-	const [{ app, loading, error }, dispatch] = React.useReducer(reducer, initialState());
-	useAppWithDispatch(appName, dispatch);
-	return {
-		app,
-		loading,
-		error
-	};
-}

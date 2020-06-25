@@ -45,7 +45,7 @@ const StyledNavAnchor = styled(NavAnchor)`
 	${(props: StyledNavAnchorProps) => (props.selected ? selectedNavAnchorCSS : '')}
 `;
 
-export enum ActionType {
+enum ActionType {
 	SET_START_INDEX = 'AppsListNav__SET_START_INDEX',
 	SET_LENGTH = 'AppsListNav__SET_LENGTH',
 	SET_FILTER = 'AppsListNav__SET_FILTER'
@@ -66,7 +66,7 @@ interface SetFilterAction {
 	value: string;
 }
 
-export type Action = SetStartIndexAction | SetLengthAction | SetFilterAction | AppsAction;
+type Action = SetStartIndexAction | SetLengthAction | SetFilterAction | AppsAction;
 
 type Dispatcher = (actions: Action | Action[]) => void;
 
@@ -144,7 +144,7 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 	return nextState;
 }
 
-export interface Props {}
+interface Props {}
 
 export default function AppsListNav(props: Props) {
 	const { location, urlParams, match } = useRouter();

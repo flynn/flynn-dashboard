@@ -23,7 +23,7 @@ const DiffLine = styled(Box)<DiffLineProps>`
 	background-color: ${(props) => opBackgroundColors[props.op] || 'transparent'};
 `;
 
-export interface KeyValueDiffProps {
+interface KeyValueDiffProps {
 	prev: StringMap;
 	next: StringMap;
 	showAll?: boolean;

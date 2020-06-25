@@ -11,7 +11,7 @@ export interface ErrorHandler {
 	key: Symbol;
 }
 
-export interface CancelableError extends Error {
+interface CancelableError extends Error {
 	cancel: () => void;
 	key: Symbol;
 }
@@ -23,7 +23,7 @@ function isCancelableError(error: Error): error is CancelableError {
 	return false;
 }
 
-export interface RetriableError extends Error {
+interface RetriableError extends Error {
 	retry: () => void;
 	key: Symbol;
 }
@@ -39,7 +39,7 @@ const callbacks = new Set<() => void>();
 
 const errors = new Map<Symbol, Array<CancelableError | RetriableError>>();
 
-export function registerCallback(h: () => void): () => void {
+function registerCallback(h: () => void): () => void {
 	callbacks.add(h);
 	return () => {
 		callbacks.delete(h);
@@ -99,7 +99,7 @@ function handleError(error: Error, key: Symbol = Symbol('useErrorHandler key(und
 	return cancel;
 }
 
-export function useErrors(): Array<CancelableError | RetriableError> {
+function useErrors(): Array<CancelableError | RetriableError> {
 	const [errorsArr, setErrors] = React.useState<Array<CancelableError | RetriableError>>([]);
 	React.useEffect(() => {
 		return registerCallback(() => {
