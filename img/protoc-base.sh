@@ -2,8 +2,8 @@
 
 set -e
 
-protoc_version="3.11.0"
-protoc_shasum="43dbd9200006152559de2fb9370dbbaac4e711a317a61ba9c1107bb84a27a213"
+protoc_version="3.12.3"
+protoc_shasum="90257aed22e983a6772fb5af259a14d8f78deac0814a7df76a741975ffeea1c0"
 protoc_url="https://github.com/google/protobuf/releases/download/v${protoc_version}/protoc-${protoc_version}-linux-x86_64.zip"
 
 apt-get update
@@ -17,12 +17,12 @@ unzip -d /usr/local /tmp/protoc.zip
 rm /tmp/protoc.zip
 
 # install nodejs
-nodeversion="8.11.4"
-nodeshasum="c69abe770f002a7415bd00f7ea13b086650c1dd925ef0c3bf8de90eabecc8790"
-curl -fSLo /tmp/node.tar.gz "https://nodejs.org/dist/v${nodeversion}/node-v${nodeversion}-linux-x64.tar.gz"
-echo "${nodeshasum}  /tmp/node.tar.gz" | shasum -c -
-tar xzf /tmp/node.tar.gz -C "/usr/local"
-rm /tmp/node.tar.gz
+nodeversion="12.18.1"
+nodeshasum="863f816967e297c9eb221ad3cf32521f7ac46fffc66750e60f159ed63809affa"
+curl -fSLo /tmp/node.tar.xz "https://nodejs.org/dist/v${nodeversion}/node-v${nodeversion}-linux-x64.tar.xz"
+echo "${nodeshasum}  /tmp/node.tar.xz" | shasum -c -
+tar xf /tmp/node.tar.xz -C "/usr/local"
+rm /tmp/node.tar.xz
 # link nodejs binary
 nodebin="/usr/local/node-v${nodeversion}-linux-x64/bin"
 ln -nfs ${nodebin}/node /usr/local/bin/node
