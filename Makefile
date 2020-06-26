@@ -1,5 +1,5 @@
 build:
-	docker build --tag "flynn:dashboard" --build-arg CONTROLLER_HOST="${CONTROLLER_HOST}" --build-arg OAUTH_ISSUER="${OAUTH_ISSUER}" --build-arg OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}" .
+	docker build --tag "flynn:dashboard" --build-arg OAUTH_ISSUER="${OAUTH_ISSUER}" --build-arg OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}" .
 	./scripts/extract-build.sh
 
 generate: build

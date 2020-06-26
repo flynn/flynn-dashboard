@@ -1,0 +1,3 @@
+steps:
+- name: node:lts
+  entrypoint: scripts/cloud-build.sh

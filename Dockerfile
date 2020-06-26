@@ -1,8 +1,8 @@
-FROM ubuntu:20.04
+FROM node:lts
 
 RUN apt-get update && apt-get install build-essential -y --no-install-recommends
-COPY ./img /img
-RUN /img/protoc-base.sh && /img/protoc-flynn.sh && /img/yarn.sh
+COPY ./scripts /scripts
+RUN /scripts/install-protoc.sh && /scripts/protoc-flynn.sh && /scripts/install-yarn.sh
 
 ARG OAUTH_ISSUER
 ARG OAUTH_CLIENT_ID
