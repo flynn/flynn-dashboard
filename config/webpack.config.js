@@ -519,10 +519,7 @@ module.exports = function(webpackEnv) {
 			// Makes some environment variables available in index.html.
 			// The public URL is available as %PUBLIC_URL% in index.html, e.g.:
 			// <link rel="icon" href="%PUBLIC_URL%/favicon.ico">
-			// In production, it is handled by the production server (see
-			// interpolateConfig in api.go and PublicConfig/PrivateConfig in
-			// config.go).
-			isEnvProduction ? void 0 : new InterpolateHtmlPlugin(HtmlWebpackPlugin, env.raw),
+			new InterpolateHtmlPlugin(HtmlWebpackPlugin, env.raw),
 			// This gives some necessary context to module not found errors, such as
 			// the requesting resource.
 			new ModuleNotFoundPlugin(paths.appPath),
