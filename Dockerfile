@@ -2,7 +2,7 @@ FROM node:lts
 
 RUN apt-get update && apt-get install build-essential -y --no-install-recommends
 COPY ./scripts /scripts
-RUN /scripts/install-protoc.sh && /scripts/protoc-flynn.sh && /scripts/install-yarn.sh
+RUN /scripts/install-protoc.sh && /scripts/protoc-flynn.sh
 
 ARG OAUTH_ISSUER
 ARG OAUTH_CLIENT_ID

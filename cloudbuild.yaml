@@ -1,3 +1,31 @@
 steps:
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+  entrypoint: scripts/cloudbuild/cache-fetch.sh
+  env:
+    - CACHE_BUCKET=$_CACHE_BUCKET
 - name: node:lts
-  entrypoint: scripts/cloud-build.sh
+  entrypoint: scripts/cloudbuild/build.sh
+  env:
+    - OAUTH_ISSUER=$_OAUTH_ISSUER
+    - OAUTH_CLIENT_ID=$_OAUTH_CLIENT_ID
+    - COMMIT_SHA=$COMMIT_SHA
+    - BUILD_ID=$BUILD_ID
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+  entrypoint: scripts/cloudbuild/cache-store.sh
+  env:
+    - CACHE_BUCKET=$_CACHE_BUCKET
+- name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+  entrypoint: scripts/cloudbuild/get-secrets.sh
+- name: golang
+  entrypoint: scripts/cloudbuild/deploy.sh
+  env:
+    - S3_BUCKET=$_S3_BUCKET
+    - S3_REGION=$_S3_REGION
+    - CF_DISTRIBUTION=$_CF_DISTRIBUTION
+substitutions:
+  _CACHE_BUCKET: flynn-dashboard-production-build-cache
+  _OAUTH_ISSUER: https://oauth.flynnhub.com
+  _OAUTH_CLIENT_ID: EhEKBkNsaWVudBCAgIC4ycaRCg
+  _S3_BUCKET: flynn-dashboard-production-us-east-2
+  _S3_REGION: us-east-2
+  _CF_DISTRIBUTION: ELIHO0E5BL8Y
