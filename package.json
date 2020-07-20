@@ -20,7 +20,7 @@
     "@types/serviceworker-webpack-plugin": "^1.0.1",
     "@types/styled-components": "^4.4.2",
     "@types/tinycolor2": "^1.4.2",
-    "@typescript-eslint/eslint-plugin": "^2.8.0",
+    "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.8.0",
     "@welldone-software/why-did-you-render": "^3.5.0",
     "babel-eslint": "10.0.3",
