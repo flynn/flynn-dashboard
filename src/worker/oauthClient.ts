@@ -518,6 +518,6 @@ async function doTokenRefresh(audienceHash: string | null, refreshToken: string)
 		await setToken(audienceHash, token as types.OAuthToken);
 	} else {
 		debug('[doTokenRefresh] error', audienceHash, token);
-		throw buildError(token, `Error refreshing auth token for audience (${audience})`);
+		throw buildError(token, `Error refreshing auth token for audience (${(audience || {}).name})`);
 	}
 }
