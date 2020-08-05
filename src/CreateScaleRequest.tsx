@@ -29,6 +29,7 @@ import ProcessesDiff, { ActionType as ProcessesDiffActionType, Action as Process
 import protoMapDiff from './util/protoMapDiff';
 import protoMapReplace from './util/protoMapReplace';
 import buildProcessesMap from './util/buildProcessesMap';
+import getCreateScaleConfig from './util/getCreateScaleConfig';
 import { ScaleRequest, CreateScaleRequest } from './generated/controller_pb';
 
 export enum ActionType {
@@ -173,7 +174,7 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 		if (scale === prevScale && nextScale === prevNextScale && release === prevRelease) return;
 		const diff = protoMapDiff(
 			buildProcessesMap((scale || new ScaleRequest()).getNewProcessesMap(), release),
-			buildProcessesMap(nextScale.getProcessesMap(), release)
+			buildProcessesMap(getCreateScaleConfig(nextScale).getProcessesMap(), release)
 		);
 		nextState.hasChanges = diff.length > 0;
 	})();
@@ -232,8 +233,8 @@ export default function CreateScaleRequestComponent(props: Props) {
 
 		const req = new CreateScaleRequest();
 		req.setParent(nextScale.getParent() || (release ? release.getName() : ''));
-		protoMapReplace(req.getProcessesMap(), nextScale.getProcessesMap());
-		protoMapReplace(req.getTagsMap(), nextScale.getTagsMap());
+		protoMapReplace(getCreateScaleConfig(req).getProcessesMap(), getCreateScaleConfig(nextScale).getProcessesMap());
+		protoMapReplace(getCreateScaleConfig(req).getTagsMap(), getCreateScaleConfig(nextScale).getTagsMap());
 		const cancel = client.createScale(req, (scaleReq: ScaleRequest, error: Error | null) => {
 			if (error) {
 				dispatch([

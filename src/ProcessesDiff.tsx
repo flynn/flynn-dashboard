@@ -8,6 +8,7 @@ import ProcessScale, {
 } from './ProcessScale';
 import protoMapDiff, { Diff, DiffOp, DiffOption } from './util/protoMapDiff';
 import buildProcessesMap from './util/buildProcessesMap';
+import getCreateScaleConfig from './util/getCreateScaleConfig';
 import { ScaleRequest, CreateScaleRequest, Release } from './generated/controller_pb';
 import useMergeDispatch from './useMergeDispatch';
 
@@ -53,7 +54,7 @@ function buildProcessesFullDiff(
 ): Diff<string, number> {
 	return protoMapDiff(
 		buildProcessesMap((scale || new ScaleRequest()).getNewProcessesMap(), release),
-		buildProcessesMap(nextScale.getProcessesMap(), release),
+		buildProcessesMap(getCreateScaleConfig(nextScale).getProcessesMap(), release),
 		DiffOption.INCLUDE_UNCHANGED,
 		DiffOption.NO_DUPLICATE_KEYS
 	);

@@ -2,7 +2,8 @@
 
 set -e
 
-ref="5239bdd5f33754683abf5680db6d067de0240984"
+# TODO(jvatic): update this once flynn/flynn#4584 is merged
+ref="8fd28e5bf01061c28a7941cedfe083ee6c1ea4b8"
 
 # download flynn controller api protobuf file
 mkdir -p /flynn-controller-api/generated

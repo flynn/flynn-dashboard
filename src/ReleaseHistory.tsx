@@ -57,6 +57,7 @@ import protoMapReplace from './util/protoMapReplace';
 import isActionType from './util/isActionType';
 import roundedDate from './util/roundedDate';
 import timestampToDate from './util/timestampToDate';
+import getCreateScaleConfig from './util/getCreateScaleConfig';
 
 enum SelectedResourceType {
 	Release = 1,
@@ -274,8 +275,8 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 				nextState.isDeploying = true;
 				nextState.nextScale = ((s) => {
 					const nextScale = new CreateScaleRequest();
-					protoMapReplace(nextScale.getProcessesMap(), s.getNewProcessesMap());
-					protoMapReplace(nextScale.getTagsMap(), s.getNewTagsMap());
+					protoMapReplace(getCreateScaleConfig(nextScale).getProcessesMap(), s.getNewProcessesMap());
+					protoMapReplace(getCreateScaleConfig(nextScale).getTagsMap(), s.getNewTagsMap());
 					return nextScale;
 				})(action.scale);
 				return nextState;
