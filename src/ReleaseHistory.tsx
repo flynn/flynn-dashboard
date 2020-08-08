@@ -19,27 +19,19 @@ import ExpandedScaleRequestComponent, {
 import { default as useRouter } from './useRouter';
 import { useAppWithDispatch, Action as AppAction, ActionType as AppActionType } from './useApp';
 import {
-	useReleaseHistoryWithDispatch,
-	Action as ReleaseHistoryAction,
-	ActionType as ReleaseHistoryActionType,
-	reducer as releaseHistoryReducer,
-	State as ReleaseHistoryState,
-	initialState as initialReleaseHistoryState
-} from './useReleaseHistory';
+	useDeploymentEventsWithDispatch,
+	Action as DeploymentEventsAction,
+	ActionType as DeploymentEventsActionType,
+	reducer as deploymentEventsReducer,
+	State as DeploymentEventsState,
+	initialState as initialDeploymentEventsState
+} from './useDeploymentEvents';
+import { setDeploymentEventsTypeFilters } from './client';
 import { useAppScaleWithDispatch, Action as AppScaleAction, ActionType as AppScaleActionType } from './useAppScale';
 import useErrorHandler from './useErrorHandler';
 import useWithCancel from './useWithCancel';
 import useDateString from './useDateString';
-import { listDeploymentsRequestFilterType, ReleaseHistoryItem } from './client';
-import {
-	App,
-	Release,
-	ExpandedDeployment,
-	ReleaseType,
-	ReleaseTypeMap,
-	ScaleRequest,
-	CreateScaleRequest
-} from './generated/controller_pb';
+import { App, Release, ExpandedDeployment, Event, ScaleRequest, CreateScaleRequest } from './generated/controller_pb';
 import Loading from './Loading';
 import CreateDeployment, {
 	Action as CreateDeploymentAction,
@@ -107,7 +99,7 @@ type Action =
 	| SetPaneHeightAction
 	| AppAction
 	| AppScaleAction
-	| ReleaseHistoryAction
+	| DeploymentEventsAction
 	| ExpandedReleaseAction
 	| ExpandedScaleRequestAction
 	| CreateScaleRequestAction
@@ -152,8 +144,8 @@ interface State {
 	currentScaleLoading: boolean;
 	currentScaleError: Error | null;
 
-	// useReleaseHistory
-	releaseHistoryState: ReleaseHistoryState;
+	// useDeploymentEvents
+	deploymentEventsState: DeploymentEventsState;
 
 	// <CreateScaleRequest>
 	createScaleRequestError: Error | null;
@@ -187,8 +179,8 @@ function initialState(): State {
 		currentScaleLoading: true,
 		currentScaleError: null,
 
-		// useReleaseHistory
-		releaseHistoryState: initialReleaseHistoryState(),
+		// useDeploymentEvents
+		deploymentEventsState: initialDeploymentEventsState(),
 
 		// <CreateScaleRequest>
 		createScaleRequestError: null,
@@ -319,9 +311,9 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 			// <CreateDeployment> END
 
 			default:
-				// useReleaseHistory
-				if (isActionType<ReleaseHistoryAction>(ReleaseHistoryActionType, action)) {
-					nextState.releaseHistoryState = releaseHistoryReducer(prevState.releaseHistoryState, action);
+				// useDeploymentEvents
+				if (isActionType<DeploymentEventsAction>(DeploymentEventsActionType, action)) {
+					nextState.deploymentEventsState = deploymentEventsReducer(prevState.deploymentEventsState, action);
 					return nextState;
 				}
 
@@ -333,8 +325,8 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 
 	(() => {
 		if (nextState.selectedResourceType === SelectedResourceType.ScaleRequest) {
-			const item = nextState.releaseHistoryState.allItems.find((sr) => sr.getName() === nextState.selectedItemName);
-			const sr = item && item.isScaleRequest ? item.getScaleRequest() : null;
+			const item = nextState.deploymentEventsState.allItems.find((sr) => sr.getName() === nextState.selectedItemName);
+			const sr = item && item.hasScaleRequest() ? item.getScaleRequest() : null;
 			if (sr) {
 				const diff = protoMapDiff(
 					(nextState.currentScale as ScaleRequest).getNewProcessesMap(),
@@ -353,7 +345,7 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 interface MapHistoryProps<T> {
 	startIndex: number;
 	length: number;
-	items: ReleaseHistoryItem[];
+	items: Event[];
 	renderDate: (key: string, date: Date) => T;
 	renderRelease: (key: string, releases: [Release, Release | null, ExpandedDeployment], index: number) => T;
 	renderScale: (key: string, scaleRequest: ScaleRequest, index: number) => T;
@@ -374,21 +366,49 @@ function mapHistory<T>({
 	const res = [] as Array<T | null>;
 	const len = Math.min(startIndex + length, items.length);
 	let date: Date | null = null;
+	const isOldReleaseScale = (s: ScaleRequest, index: number): boolean => {
+		// return if scale request doesn't have a deployment to match
+		const deploymentName = s.getDeploymentName();
+		if (!deploymentName) return false;
+		// look ahead for matching deployment event and give up after 10 items
+		for (let i = index; i < Math.min(len, index + 10); i++) {
+			const item = items[i];
+			if (!item.hasDeployment()) continue;
+			console.log(item.toObject());
+			if (item.getParent() !== deploymentName) continue;
+			const d = item.getDeployment();
+			if (!d) continue;
+			const oldRelease = d.getOldRelease();
+			if (!oldRelease) return false;
+			if (s.getParent() === oldRelease.getName()) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	};
 	for (let i = startIndex; i < len; i++) {
 		const item = items[i];
 		let prevDate = date;
 		let el: T | null = null;
-		if (item.isScaleRequest) {
+		if (item.hasScaleRequest()) {
 			const s = item.getScaleRequest();
+			if (!s) continue;
+			console.log('isOldReleaseScale', item.toObject());
+			if (isOldReleaseScale(s, i)) continue;
 			date = roundedDate((s.getCreateTime() as timestamp_pb.Timestamp).toDate());
 			el = renderScale(_last(s.getName().split('/')) + `-${s.getState()}`, s, i);
-		} else {
-			// it must be a deployment
+		} else if (item.hasDeployment()) {
 			const d = item.getDeployment();
+			if (!d) continue;
 			const r = d.getNewRelease() || null;
 			const pr = d.getOldRelease() || null;
 			date = roundedDate((d.getCreateTime() as timestamp_pb.Timestamp).toDate());
 			el = renderRelease(_last(d.getName().split('/')), [r as Release, pr, d], i);
+		} else {
+			// ignore other event types
+			continue;
 		}
 
 		if (prevDate === null || date < prevDate) {
@@ -605,7 +625,7 @@ function ReleaseHistory({ appName }: Props) {
 			currentScaleError,
 
 			// useReleaseHistory
-			releaseHistoryState: {
+			deploymentEventsState: {
 				allItems: items,
 				nextPageToken,
 				fetchNextPage,
@@ -647,40 +667,13 @@ function ReleaseHistory({ appName }: Props) {
 		history
 	} = useRouter();
 	const { clusterHash } = matchParams;
-	const releasesListFilters = [urlParams.getAll('rhf'), ['code', 'env', 'scale']].find((i) => i.length > 0) as string[];
 
-	const rhf = releasesListFilters;
-	const isCodeReleaseEnabled = React.useMemo(() => {
-		return rhf.length === 0 || rhf.indexOf('code') !== -1;
-	}, [rhf]);
-	const isConfigReleaseEnabled = React.useMemo(() => {
-		return rhf.indexOf('env') !== -1;
-	}, [rhf]);
-	const scalesEnabled = React.useMemo(() => {
-		return rhf.indexOf('scale') !== -1;
-	}, [rhf]);
-
-	// Stream release history (scales and deployments coalesced together)
-	const deploymentsEnabled = isCodeReleaseEnabled || isConfigReleaseEnabled;
-	const deploymentReqModifiers = React.useMemo(() => {
-		let filterType = ReleaseType.ANY as ReleaseTypeMap[keyof ReleaseTypeMap];
-		if (isCodeReleaseEnabled && !isConfigReleaseEnabled) {
-			filterType = ReleaseType.CODE;
-		} else if (isConfigReleaseEnabled && !isCodeReleaseEnabled) {
-			filterType = ReleaseType.CONFIG;
-		}
-
-		return [listDeploymentsRequestFilterType(filterType)];
-	}, [isCodeReleaseEnabled, isConfigReleaseEnabled]);
-	const scaleReqModifiers = React.useMemo(() => [], []);
-	useReleaseHistoryWithDispatch(
-		appName,
-		scaleReqModifiers,
-		deploymentReqModifiers,
-		scalesEnabled,
-		deploymentsEnabled,
-		dispatch
+	// Stream deployment events
+	const deploymentEventsReqModifiers = React.useMemo(
+		() => [setDeploymentEventsTypeFilters('deployment', 'scale_request')],
+		[]
 	);
+	useDeploymentEventsWithDispatch(appName, deploymentEventsReqModifiers, dispatch);
 
 	const handleSelectionCancel = () => {
 		history.push({ pathname: `/clusters/${clusterHash}/${appName}`, search: urlParams.toString() });

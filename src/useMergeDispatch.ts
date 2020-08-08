@@ -5,7 +5,7 @@ import { ActionType as AppActionType, Action as AppAction } from './useApp';
 import { ActionType as AppReleaseActionType, Action as AppReleaseAction } from './useAppRelease';
 import { ActionType as AppScaleActionType, Action as AppScaleAction } from './useAppScale';
 import { ActionType as ReleaseActionType, Action as ReleaseAction } from './useRelease';
-import { ActionType as ReleaseHistoryActionType, Action as ReleaseHistoryAction } from './useReleaseHistory';
+import { ActionType as DeploymentEventsActionType, Action as DeploymentEventsAction } from './useDeploymentEvents';
 
 type Dispatcher<Action> = (actions: Action | Action[]) => void;
 
@@ -27,7 +27,7 @@ export default function useMergeDispatch<Action>(
 						isActionType<AppReleaseAction>(AppReleaseActionType, action) ||
 						isActionType<AppScaleAction>(AppScaleActionType, action) ||
 						isActionType<ReleaseAction>(ReleaseActionType, action) ||
-						isActionType<ReleaseHistoryAction>(ReleaseHistoryActionType, action)
+						isActionType<DeploymentEventsAction>(DeploymentEventsActionType, action)
 					) {
 						// TODO(jvatic): useAppsList
 						return false;
