@@ -8,6 +8,7 @@ import * as types from './types';
 import { getConfig, hasActiveClientID } from './config';
 import { postMessageAll, postMessage } from './external';
 import { isTokenValid, isRefreshTokenValid } from './tokenHelpers';
+import ifDev from '../ifDev';
 import _debug from './debug';
 import retryFetch from './retryFetch';
 import { randomString, base64, sha256, sha1, hex } from '../util/crypto';
@@ -426,6 +427,15 @@ async function doTokenExchange(audienceHash: string | null, params: types.OAuthC
 	}
 }
 
+const DEV_AUDIENCES =
+	ifDev(() => [
+		{
+			type: 'flynn_controller',
+			name: 'localflynn 9443',
+			url: 'https://controller.1.localflynn.com:9443'
+		}
+	]) || [];
+
 async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): Promise<types.OAuthAudience[]> {
 	debug('[fetchAudiences]', refreshToken);
 
@@ -448,7 +458,7 @@ async function fetchAudiences(refreshToken: string, abortSignal?: AbortSignal): 
 		throw error;
 	}
 	const audiences = await asyncReduce(
-		(body || {}).audiences || [],
+		((body || {}).audiences || []).concat(DEV_AUDIENCES),
 		async (m: types.OAuthAudience[], a: types.OAuthAudience) => {
 			if (a.type !== 'flynn_controller') return m;
 			const hash = hex(await sha1(a.url));
