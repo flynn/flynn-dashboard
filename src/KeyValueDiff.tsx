@@ -35,6 +35,8 @@ export default function KeyValueDiff({ prev, next, showAll = false }: KeyValueDi
 		return a.key.localeCompare(b.key);
 	});
 
+	if (diff.length === 0) return null;
+
 	return (
 		<Box tag="pre">
 			{diff.map((item) => {

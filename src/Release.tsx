@@ -26,6 +26,7 @@ function ReleaseComponent({
 				</>
 			) : null}
 			<KeyValueDiff prev={prev ? prev.getEnvMap() : new jspb.Map([])} next={release.getEnvMap()} />
+			<KeyValueDiff prev={prev ? prev.getLabelsMap() : new jspb.Map([])} next={release.getLabelsMap()} />
 		</Box>
 	);
 }
