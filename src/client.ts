@@ -540,8 +540,8 @@ function eventDataCreateTime(event: Event): Timestamp {
 function wrapDeploymentEventsStream(
 	stream: ResponseStream<StreamDeploymentEventsResponse>
 ): MemoizableResponseStream<StreamDeploymentEventsResponse> {
-	const eventIndices = new Map<string, number>();
 	const mergeResponses = (prev: StreamDeploymentEventsResponse | null, res: StreamDeploymentEventsResponse) => {
+		const eventIndices = new Map<string, number>();
 		const events = [] as Event[];
 		(prev ? prev.getEventsList() : []).concat(res.getEventsList()).forEach((event) => {
 			let index = eventIndices.get(event.getParent());
