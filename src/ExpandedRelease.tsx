@@ -169,6 +169,15 @@ export default function ExpandedRelease({ dispatch: callerDispatch }: Props) {
 		);
 	};
 
+	const commitHash = gitCommit(release);
+	const shortCommitHash = (commitHash || '').slice(0, 7);
+	const committerEmail = labels.get('git.committer-email') || '';
+	const committerName = labels.get('git.committer-name') || '';
+	const authorEmail = labels.get('git.author-email') || '';
+	const authorName = labels.get('git.author-name') || '';
+	const commitSubject = labels.get('git.subject') || '';
+	const commitBody = labels.get('git.body') || '';
+
 	let baseGithubURL = (appMeta.get('github.url') || null) as string | null;
 	let githubCompareURL = null as string | null;
 	let githubURL = null as string | null;
@@ -178,9 +187,9 @@ export default function ExpandedRelease({ dispatch: callerDispatch }: Props) {
 		baseGithubURL = `https://github.com/${labels.get('github_user')}/${labels.get('github_repo')}`;
 	}
 	if (baseGithubURL) {
-		githubURL = `${baseGithubURL}/commit/${gitCommit(release)}`;
+		githubURL = `${baseGithubURL}/commit/${commitHash}`;
 		if (prevRelease) {
-			githubCompareURL = `${baseGithubURL}/compare/${gitCommit(prevRelease)}...${gitCommit(release)}`;
+			githubCompareURL = `${baseGithubURL}/compare/${gitCommit(prevRelease)}...${commitHash}`;
 		}
 	}
 
@@ -217,16 +226,30 @@ export default function ExpandedRelease({ dispatch: callerDispatch }: Props) {
 						{createTime.toString()}
 					</>
 				) : null}
-				{gitCommit(release) ? (
+				{commitHash ? (
 					<>
 						<span>
 							<br />
-							git.commit{' '}
-							{githubURL ? <ExternalAnchor href={githubURL}>{gitCommit(release)}</ExternalAnchor> : gitCommit(release)}
+							{githubURL ? <ExternalAnchor href={githubURL}>{shortCommitHash}</ExternalAnchor> : shortCommitHash}
 							{githubCompareURL ? (
 								<>
 									&nbsp;
 									<ExternalAnchor href={githubCompareURL}>[compare]</ExternalAnchor>
+								</>
+							) : null}{' '}
+							{commitSubject}
+							<br />
+							{commitBody ? (
+								<>
+									{commitBody}
+									<br />
+								</>
+							) : null}
+							{committerName} &lt;{committerEmail}&gt;
+							{authorEmail !== committerEmail ? (
+								<>
+									{' '}
+									(author: {authorName} &lt;{authorEmail}&gt;)
 								</>
 							) : null}
 						</span>

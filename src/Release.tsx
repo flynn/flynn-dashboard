@@ -25,8 +25,28 @@ function ReleaseComponent({
 					<br />
 				</>
 			) : null}
+			<CommitSummary release={release} />
 			<KeyValueDiff prev={prev ? prev.getEnvMap() : new jspb.Map([])} next={release.getEnvMap()} />
-			<KeyValueDiff prev={prev ? prev.getLabelsMap() : new jspb.Map([])} next={release.getLabelsMap()} />
+		</Box>
+	);
+}
+
+function CommitSummary({ release }: { release: Release }) {
+	const metadata = release.getLabelsMap();
+	const commit = (metadata.get('git.commit') || '').slice(0, 7);
+	const committerEmail = metadata.get('git.committer-email') || '';
+	const committerName = metadata.get('git.committer-name') || '';
+	const subject = metadata.get('git.subject') || '';
+	const body = metadata.get('git.body') || '';
+
+	if (!commit) return null;
+
+	return (
+		<Box tag="pre">
+			{commit} {subject}
+			{body.length > 0 ? '...' : ''}
+			<br />
+			{committerName} &lt;{committerEmail}&gt;
 		</Box>
 	);
 }
