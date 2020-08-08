@@ -374,7 +374,6 @@ function mapHistory<T>({
 		for (let i = index; i < Math.min(len, index + 10); i++) {
 			const item = items[i];
 			if (!item.hasDeployment()) continue;
-			console.log(item.toObject());
 			if (item.getParent() !== deploymentName) continue;
 			const d = item.getDeployment();
 			if (!d) continue;
@@ -395,7 +394,6 @@ function mapHistory<T>({
 		if (item.hasScaleRequest()) {
 			const s = item.getScaleRequest();
 			if (!s) continue;
-			console.log('isOldReleaseScale', item.toObject());
 			if (isOldReleaseScale(s, i)) continue;
 			date = roundedDate((s.getCreateTime() as timestamp_pb.Timestamp).toDate());
 			el = renderScale(_last(s.getName().split('/')) + `-${s.getState()}`, s, i);
