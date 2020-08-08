@@ -526,6 +526,17 @@ function mergeStreamDeploymentResponses(
 	return res;
 }
 
+function eventDataCreateTime(event: Event): Timestamp {
+	switch (event.getType()) {
+		case 'deployment':
+			return (event.getDeployment() as ExpandedDeployment).getCreateTime() as Timestamp;
+		case 'scale_request':
+			return (event.getScaleRequest() as ScaleRequest).getCreateTime() as Timestamp;
+		default:
+			return event.getCreateTime() as Timestamp;
+	}
+}
+
 function wrapDeploymentEventsStream(
 	stream: ResponseStream<StreamDeploymentEventsResponse>
 ): MemoizableResponseStream<StreamDeploymentEventsResponse> {
@@ -549,7 +560,7 @@ function wrapDeploymentEventsStream(
 		});
 		res.setEventsList(
 			events.sort((a, b) => {
-				return compareTimestamps(b.getCreateTime(), a.getCreateTime());
+				return compareTimestamps(eventDataCreateTime(b), eventDataCreateTime(a));
 			})
 		);
 		return res;
