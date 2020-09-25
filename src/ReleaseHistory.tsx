@@ -107,22 +107,6 @@ type Action =
 
 type Dispatcher = (actions: Action | Action[]) => void;
 
-enum SelectionType {
-	RELEASE = 'RELEASE',
-	SCALE = 'SCALE'
-}
-
-interface ReleaseSelection {
-	type: SelectionType.RELEASE;
-	release: Release;
-	prevRelease?: Release | null;
-}
-
-interface ScaleSelection {
-	type: SelectionType.SCALE;
-	scale: ScaleRequest;
-}
-
 interface State {
 	isDeploying: boolean;
 	selectedItemName: string;
@@ -489,6 +473,10 @@ function ReleaseHistoryDateHeader({ date, ...boxProps }: ReleaseHistoryDateHeade
 	);
 }
 
+interface RouteParams {
+	clusterHash: string;
+}
+
 interface ReleaseHistoryReleaseProps extends BoxProps {
 	selected: boolean;
 	isCurrent: boolean;
@@ -507,7 +495,7 @@ const ReleaseHistoryRelease = React.memo(
 			urlParams,
 			history,
 			match: { params: matchParams }
-		} = useRouter();
+		} = useRouter<RouteParams>();
 		const { clusterHash } = matchParams;
 		const handleClick = React.useCallback(() => {
 			history.push({ pathname: `/clusters/${clusterHash}/${deployment.getName()}`, search: urlParams.toString() });
@@ -549,7 +537,7 @@ const ReleaseHistoryScale = React.memo(
 			urlParams,
 			history,
 			match: { params: matchParams }
-		} = useRouter();
+		} = useRouter<RouteParams>();
 		const { clusterHash } = matchParams;
 		const handleClick = React.useCallback(() => {
 			history.push({ pathname: `/clusters/${clusterHash}/${s.getName()}`, search: urlParams.toString() });
@@ -663,7 +651,7 @@ function ReleaseHistory({ appName }: Props) {
 		urlParams,
 		match: { path: parentRoutePath, params: matchParams },
 		history
-	} = useRouter();
+	} = useRouter<RouteParams>();
 	const { clusterHash } = matchParams;
 
 	// Stream deployment events

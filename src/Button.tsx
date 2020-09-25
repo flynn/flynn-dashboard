@@ -9,7 +9,7 @@ const StyledButton = styled(GrommetButton)`
 
 interface Props extends ButtonProps, Omit<JSX.IntrinsicElements['button'], 'color'> {}
 
-const Button: React.FC<Props> = function Button(props: Props, ref: any) {
+const Button = function Button(props: Props, ref: any) {
 	return <StyledButton {...props} ref={ref} />;
 };
 export default React.forwardRef(Button);

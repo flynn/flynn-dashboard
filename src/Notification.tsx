@@ -26,7 +26,7 @@ const VALUE_ICON = {
 	warning: StatusWarning
 } as { [key: string]: any };
 
-const StatusIcon = ({ value, ...rest }: { value: string; color: string }) => {
+const StatusIcon = ({ value, color, ...rest }: { value: string; color: string }) => {
 	const Icon = VALUE_ICON[value.toLowerCase()] || StatusUnknown;
 	return <Icon color={`status-${value.toLowerCase()}`} {...rest} />;
 };

@@ -51,8 +51,6 @@ interface State {
 	diff: Diff<string, number>;
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 function initialState(): State {
 	return {
 		// useScale
@@ -118,6 +116,13 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 	return nextState;
 }
 
+interface RouteParams {
+	clusterHash: string;
+	appID: string;
+	releaseID: string;
+	scaleRequestID: string;
+}
+
 interface Props {
 	dispatch: Dispatcher;
 }
@@ -127,7 +132,7 @@ export default function({ dispatch: callerDispatch }: Props) {
 		urlParams,
 		match: { params: matchParams },
 		history
-	} = useRouter();
+	} = useRouter<RouteParams>();
 	const [
 		{
 			scaleState: { scale, loading: scaleLoading },

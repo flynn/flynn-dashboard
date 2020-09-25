@@ -43,8 +43,6 @@ export function initialState(): State {
 	};
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 export function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];

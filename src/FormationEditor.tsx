@@ -127,8 +127,6 @@ function initialState(props: Props): State {
 	};
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 function buildProcessesArray(m: jspb.Map<string, number>): [string, number][] {
 	return Array.from(m.getEntryList()).sort(([ak, av]: [string, number], [bk, bv]: [string, number]) => {
 		return ak.localeCompare(bk);

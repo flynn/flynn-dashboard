@@ -51,13 +51,8 @@ export interface Client {
 	createDeployment: (parentName: string, cb: ErrorCallback) => CancelFunc;
 }
 
-interface AuthStatus {
-	authenticated: boolean;
-}
-
 type ErrorWithCode = Error & ServiceError;
 export type CancelFunc = () => void;
-type AuthCallback = (s: AuthStatus | null, error: Error | null) => void;
 type AppsCallback = (res: StreamAppsResponse, error: ErrorWithCode | null) => void;
 type AppCallback = (app: App, error: ErrorWithCode | null) => void;
 type ReleasesCallback = (res: StreamReleasesResponse, error: ErrorWithCode | null) => void;
@@ -222,7 +217,7 @@ enum BuildCancelFuncOpts {
 	CONFIRM_CANCEL
 }
 
-function buildCancelFunc<T>(req: Cancellable, ..._opts: BuildCancelFuncOpts[]): CancelFunc {
+function buildCancelFunc(req: Cancellable, ..._opts: BuildCancelFuncOpts[]): CancelFunc {
 	const opts = new Set(_opts);
 	let cancelled = false;
 	req.on('end', () => {

@@ -111,8 +111,6 @@ function initialState(props: Props): State {
 	};
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];

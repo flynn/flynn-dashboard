@@ -85,8 +85,6 @@ function initialState(props: Props): State {
 	};
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];
@@ -135,9 +133,9 @@ interface PropsB extends PropsCommon {
 
 type Props = PropsA | PropsB;
 
-export default function CreateDeployment(props: PropsA): ReturnType<React.FC<PropsA>>;
-export default function CreateDeployment(props: PropsB): ReturnType<React.FC<PropsB>>;
-export default function CreateDeployment(props: Props): ReturnType<React.FC<Props>> {
+export default function CreateDeployment(
+	props: Props | PropsA | PropsB
+): ReturnType<React.FC<Props | PropsA | PropsB>> {
 	const client = useClient();
 	const releaseName = (props as PropsA).releaseName || '';
 	const newRelease = (props as PropsB).newRelease;

@@ -68,8 +68,6 @@ interface SetFilterAction {
 
 type Action = SetStartIndexAction | SetLengthAction | SetFilterAction | AppsAction;
 
-type Dispatcher = (actions: Action | Action[]) => void;
-
 interface State {
 	appsState: AppsState;
 	filterText: string;
@@ -94,8 +92,6 @@ function initialState(): State {
 		windowingThresholdBottom: 600
 	};
 }
-
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
 
 function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {

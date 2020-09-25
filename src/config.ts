@@ -11,6 +11,15 @@ interface PrivateConfig {
 	AUTH_AUDIENCES: types.OAuthAudience[];
 }
 
+const authEmitter = createEmitter<boolean>();
+const authErrorEmitter = createEmitter<Error>();
+
+const authAudiencesStore = createBasicStore<types.OAuthAudience[]>([]);
+const selectedAuthAudienceStore = createBasicStore<string | null>(null);
+
+const authAudienceURLMap = new Map<string, string>();
+const authAudienceHashMap = new Map<string, string>();
+
 interface Config extends PublicConfig, PrivateConfig {
 	AUTH_TOKEN: types.OAuthToken | null;
 	setAuth: (token: types.OAuthToken | null) => void;
@@ -25,15 +34,6 @@ interface Config extends PublicConfig, PrivateConfig {
 	getAuthAudiences: () => types.OAuthAudience[];
 	addAuthAudiencesListener: typeof authAudiencesStore.addListener;
 }
-
-const authEmitter = createEmitter<boolean>();
-const authErrorEmitter = createEmitter<Error>();
-
-const authAudiencesStore = createBasicStore<types.OAuthAudience[]>([]);
-const selectedAuthAudienceStore = createBasicStore<string | null>(null);
-
-const authAudienceURLMap = new Map<string, string>();
-const authAudienceHashMap = new Map<string, string>();
 
 const config: Config = {
 	AUTH_AUDIENCES: authAudiencesStore.get() || [],

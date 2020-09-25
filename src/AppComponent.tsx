@@ -56,8 +56,6 @@ function initialState(props: Props): State {
 	};
 }
 
-type Reducer = (prevState: State, actions: Action | Action[]) => State;
-
 function reducer(prevState: State, actions: Action | Action[]): State {
 	if (!Array.isArray(actions)) {
 		actions = [actions];
@@ -95,6 +93,10 @@ function reducer(prevState: State, actions: Action | Action[]): State {
 	})();
 
 	return nextState;
+}
+
+interface RouteParams {
+	clusterHash: string;
 }
 
 export interface Props {
@@ -136,7 +138,7 @@ export default function AppComponent(props: Props) {
 		location,
 		urlParams,
 		match: { params: matchParams }
-	} = useRouter();
+	} = useRouter<RouteParams>();
 	const { clusterHash } = matchParams;
 
 	React.useEffect(

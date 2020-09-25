@@ -5,8 +5,6 @@ import { InputSelection, Suggestion, Dispatcher, ActionType } from './common';
 import { Entry, DataActionType } from './Data';
 import { Input } from './Input';
 
-type EntryInnerIndex = 0 | 1;
-
 export interface RowProps {
 	index: number;
 	entry: Entry;
